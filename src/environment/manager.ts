@@ -47,6 +47,20 @@ export class EnvManager {
         }
     }
 
+    getPythonPath(): string {
+        const jacPath = this.getJacPath(); // Use the existing method to get jac's path
+
+        // If jacPath is just 'jac', then python is probably just 'python' in the PATH
+        if (jacPath === 'jac' || jacPath === 'jac.exe') {
+            return process.platform === 'win32' ? 'python.exe' : 'python';
+        }
+
+        // Otherwise, construct the path: C:\path\to\env\Scripts\python.exe
+        const dir = path.dirname(jacPath);
+        const pythonExe = process.platform === 'win32' ? 'python.exe' : 'python';
+        return path.join(dir, pythonExe);
+    }
+
     updateStatusBar() {
         const label = this.jacPath ? path.basename(this.jacPath) : 'No Env';
         this.statusBar.text = `Jac Env: ${label}`;
