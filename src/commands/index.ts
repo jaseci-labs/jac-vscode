@@ -11,6 +11,11 @@ export function registerAllCommands(context: vscode.ExtensionContext, envManager
         })
     );
     context.subscriptions.push(
+        vscode.commands.registerCommand(COMMANDS.REFRESH_ENV, () => {
+            envManager.refreshEnvironments();
+        })
+    );
+    context.subscriptions.push(
         vscode.commands.registerCommand(COMMANDS.RUN_FILE, () => {
             runJacCommandForCurrentFile('run', envManager);
         })

@@ -2,6 +2,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as cp from 'child_process';
 
+// Cache for discovered environments
+let environmentCache: string[] | null = null;
+let lastScanTime: number = 0;
+const CACHE_DURATION = 300000; // 5 minutes in milliseconds
+
 function isJacInVenv(venvPath: string): string | null {
     const jacPath = path.join(venvPath, 'bin', 'jac');
     const jacPathWin = path.join(venvPath, 'Scripts', 'jac.exe');
@@ -14,26 +19,76 @@ function walkForVenvs(baseDir: string, depth = 3): string[] {
     const found: string[] = [];
     if (depth === 0) return found;
 
-    const entries = fs.readdirSync(baseDir, { withFileTypes: true });
-    for (const entry of entries) {
-        if (entry.isDirectory()) {
-            const fullPath = path.join(baseDir, entry.name);
+    try {
+        const entries = fs.readdirSync(baseDir, { withFileTypes: true });
+        for (const entry of entries) {
+            if (entry.isDirectory()) {
+                const fullPath = path.join(baseDir, entry.name);
 
-            const jacPath = isJacInVenv(fullPath);
-            if (jacPath) {
-                found.push(jacPath);
+                const jacPath = isJacInVenv(fullPath);
+                if (jacPath) {
+                    found.push(jacPath);
+                }
+
+                // Continue walking deeper
+                try {
+                    found.push(...walkForVenvs(fullPath, depth - 1));
+                } catch {}
             }
-
-            // Continue walking deeper
-            try {
-                found.push(...walkForVenvs(fullPath, depth - 1));
-            } catch {}
         }
+    } catch (error) {
+        // Silently ignore permission errors or other issues
     }
     return found;
 }
 
-export async function findPythonEnvsWithJac(workspaceRoot: string = process.cwd()): Promise<string[]> {
+function scanWorkspaceForVenvs(workspaceRoot: string): string[] {
+    const envs: string[] = [];
+    
+    // Common virtual environment directory names
+    const commonVenvNames = ['.venv', 'venv', 'env', '.env', 'virtualenv', 'pyenv'];
+    
+    // Check direct subdirectories first
+    for (const dirName of commonVenvNames) {
+        const jacPath = isJacInVenv(path.join(workspaceRoot, dirName));
+        if (jacPath) envs.push(jacPath);
+    }
+    
+    // Deeper search in common project structure directories
+    const projectDirs = ['projects', 'workspace', 'dev', 'src'];
+    for (const projectDir of projectDirs) {
+        const fullProjectPath = path.join(workspaceRoot, projectDir);
+        if (fs.existsSync(fullProjectPath)) {
+            envs.push(...walkForVenvs(fullProjectPath, 3));
+        }
+    }
+    
+    // Search in immediate subdirectories (limited depth)
+    try {
+        const entries = fs.readdirSync(workspaceRoot, { withFileTypes: true });
+        for (const entry of entries) {
+            if (entry.isDirectory() && !entry.name.startsWith('.') && !projectDirs.includes(entry.name)) {
+                const subPath = path.join(workspaceRoot, entry.name);
+                // Check if this subdirectory itself contains venvs
+                for (const venvName of commonVenvNames) {
+                    const jacPath = isJacInVenv(path.join(subPath, venvName));
+                    if (jacPath) envs.push(jacPath);
+                }
+            }
+        }
+    } catch (error) {
+        // Silently ignore permission errors
+    }
+    
+    return envs;
+}
+
+export async function findPythonEnvsWithJac(workspaceRoot: string = process.cwd(), useCache: boolean = true): Promise<string[]> {
+    // Return cached results if available and not expired
+    if (useCache && environmentCache && (Date.now() - lastScanTime) < CACHE_DURATION) {
+        return environmentCache;
+    }
+
     const envs: string[] = [];
 
     // 1. Check PATH
@@ -47,7 +102,7 @@ export async function findPythonEnvsWithJac(workspaceRoot: string = process.cwd(
 
     // 2. Conda environments
     try {
-        const condaInfo = cp.execSync('conda env list', { encoding: 'utf8' });
+        const condaInfo = cp.execSync('conda env list', { encoding: 'utf8', timeout: 5000 });
         const condaLines = condaInfo.split('\n');
         for (const line of condaLines) {
             const match = line.match(/^(.*?)\s+(\S+)/);
@@ -64,7 +119,7 @@ export async function findPythonEnvsWithJac(workspaceRoot: string = process.cwd(
     // 3. WSL Conda environments (skip if already inside WSL)
     if (!process.env.WSL_DISTRO_NAME) {
         try {
-            const wslCondaInfo = cp.execSync('wsl conda env list', { encoding: 'utf8' });
+            const wslCondaInfo = cp.execSync('wsl conda env list', { encoding: 'utf8', timeout: 5000 });
             const wslCondaLines = wslCondaInfo.split('\n');
             for (const line of wslCondaLines) {
                 const match = line.match(/^(.*?)\s+(\S+)/);
@@ -72,7 +127,7 @@ export async function findPythonEnvsWithJac(workspaceRoot: string = process.cwd(
                     const envPath = match[2];
                     const jacPath = `/mnt/${envPath.replace(/^\/mnt\//, '').replace(/\\/g, '/')}/bin/jac`;
                     try {
-                        const wslCheck = cp.execSync(`wsl test -f ${jacPath} && echo exists || echo missing`, { encoding: 'utf8' }).trim();
+                        const wslCheck = cp.execSync(`wsl test -f ${jacPath} && echo exists || echo missing`, { encoding: 'utf8', timeout: 3000 }).trim();
                         if (wslCheck === 'exists') envs.push(`wsl:${jacPath}`);
                     } catch {}
                 }
@@ -82,23 +137,35 @@ export async function findPythonEnvsWithJac(workspaceRoot: string = process.cwd(
         }
     }
 
-    // 4. Local venvs in workspace
-    const localVenvDirs = ['.venv', 'venv', 'env'];
-    for (const dirName of localVenvDirs) {
-        const jacPath = isJacInVenv(path.join(workspaceRoot, dirName));
-        if (jacPath) envs.push(jacPath);
-    }
+    // 4. Enhanced workspace search
+    envs.push(...scanWorkspaceForVenvs(workspaceRoot));
 
-    // 5. Walk home directory (or workspace) to find other venvs
+    // 5. Walk home directory to find other venvs
     const homeDir = process.env.HOME || process.env.USERPROFILE || workspaceRoot;
-    envs.push(...walkForVenvs(homeDir, 6));  // limit search to depth 6
+    if (homeDir !== workspaceRoot) {
+        envs.push(...walkForVenvs(homeDir, 4));  // Reduced depth for home directory
+    }
+    
     const venvWrapperDir = path.join(homeDir, '.virtualenvs');
     if (fs.existsSync(venvWrapperDir)) {
         envs.push(...walkForVenvs(venvWrapperDir, 2));
     }
 
-    // 6. Deduplicate
+    // 6. Deduplicate and cache results
     const uniqueEnvs = Array.from(new Set(envs));
+    
+    // Update cache
+    environmentCache = uniqueEnvs;
+    lastScanTime = Date.now();
 
     return uniqueEnvs;
+}
+
+export function clearEnvironmentCache(): void {
+    environmentCache = null;
+    lastScanTime = 0;
+}
+
+export function isCacheValid(): boolean {
+    return environmentCache !== null && (Date.now() - lastScanTime) < CACHE_DURATION;
 }
