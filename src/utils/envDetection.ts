@@ -3,9 +3,9 @@ import * as path from 'path';
 import * as cp from 'child_process';
 
 // Cache for discovered environments
-let environmentCache: string[] | null = null;
+let environmentCache: string[] | null = null;  // Stores found environment paths
 let lastScanTime: number = 0;
-const CACHE_DURATION = 300000; // 5 minutes in milliseconds
+const CACHE_DURATION = 10000;                // Cache valid for 10 seconds
 
 function isJacInVenv(venvPath: string): string | null {
     const jacPath = path.join(venvPath, 'bin', 'jac');
@@ -84,10 +84,11 @@ function scanWorkspaceForVenvs(workspaceRoot: string): string[] {
 }
 
 export async function findPythonEnvsWithJac(workspaceRoot: string = process.cwd(), useCache: boolean = true): Promise<string[]> {
-    // Return cached results if available and not expired
+    // CACHE CHECK: Return cached results if available and not expired
     if (useCache && environmentCache && (Date.now() - lastScanTime) < CACHE_DURATION) {
-        return environmentCache;
+        return environmentCache;  // Return instantly - NO file system scanning!
     }
+
 
     const envs: string[] = [];
 
@@ -154,18 +155,19 @@ export async function findPythonEnvsWithJac(workspaceRoot: string = process.cwd(
     // 6. Deduplicate and cache results
     const uniqueEnvs = Array.from(new Set(envs));
     
-    // Update cache
-    environmentCache = uniqueEnvs;
-    lastScanTime = Date.now();
-
+    // CACHE UPDATE: Store results with current timestamp
+    environmentCache = uniqueEnvs;        // Save found environments
+    lastScanTime = Date.now();            // Remember when we scanned
+    
     return uniqueEnvs;
 }
 
 export function clearEnvironmentCache(): void {
-    environmentCache = null;
-    lastScanTime = 0;
+    environmentCache = null;  // Clear stored environments
+    lastScanTime = 0;        // Reset timestamp (forces fresh scan)
 }
 
 export function isCacheValid(): boolean {
+    // Check if we have cache AND it's not expired
     return environmentCache !== null && (Date.now() - lastScanTime) < CACHE_DURATION;
 }
