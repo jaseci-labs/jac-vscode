@@ -36,6 +36,11 @@
           "type": "boolean",
           "default": false,
           "description": "Show the 'Jac: Serve' Button in the editor title bar"
+        },
+        "jaclang-extension.developerMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable developer mode to use experimental language server features"
         }
       }
     },
@@ -64,6 +69,10 @@
       {
         "command": "jaclang-extension.selectEnv",
         "title": "Jaclang: Select Environment"
+      },
+      {
+        "command": "jaclang-extension.toggleDeveloperMode",
+        "title": "Jac: Toggle Developer Mode"
       },
       {
         "command": "jaclang-extension.runCurrentFile",

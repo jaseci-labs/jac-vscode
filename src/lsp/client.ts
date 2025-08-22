@@ -9,24 +9,42 @@ export let client: LanguageClient;
 
 export function setupLspClient(envManager: { getJacPath(): string }) {
     const jacPath = envManager.getJacPath();
+    
+    // Check if developer mode is enabled
+    const config = vscode.workspace.getConfiguration('jaclang-extension');
+    const isDeveloperMode = config.get<boolean>('developerMode', false);
+    
+    // Use lsp2 command if developer mode is enabled, otherwise use lsp
+    const lspCommand = isDeveloperMode ? 'lsp_dev' : 'lsp';
+    
     const serverOptions: ServerOptions = {
-        run: { command: jacPath, args: ['lsp'] },
-        debug: { command: jacPath, args: ['lsp'] }
+        run: { command: jacPath, args: [lspCommand] },
+        debug: { command: jacPath, args: [lspCommand] }
     };
+    
     const clientOptions: LanguageClientOptions = {
         documentSelector: [{ scheme: 'file', language: 'jac' }],
     };
+    
+    const serverName = isDeveloperMode ? 'Jac Language Server (Dev Mode)' : 'Jac Language Server';
+    const clientName = isDeveloperMode ? 'JacLanguageServer-Dev' : 'JacLanguageServer';
+    
     client = new LanguageClient(
-        'JacLanguageServer',
-        'Jac Language Server',
+        clientName,
+        serverName,
         serverOptions,
         clientOptions
     );
+    
     client.start().then(() => {
-        vscode.window.showInformationMessage('Jac Language Server started!');
+        const message = isDeveloperMode 
+            ? 'Jac Language Server (Dev Mode) started!' 
+            : 'Jac Language Server started!';
+        vscode.window.showInformationMessage(message);
     }).catch((error) => {
         vscode.window.showErrorMessage('Failed to start Jac Language Server: ' + error.message);
     });
+    
     return client;
 }
 
