@@ -16,6 +16,9 @@
 					"include": "#global"
 				},
 				{
+					"include": "#sem"
+				},
+				{
 					"include": "#archetype"
 				},
 				{
@@ -96,6 +99,45 @@
 						{
 							"name": "entity.name.type.property.jac",
 							"match": "\\b([[:alpha:]_]\\w*)\\s*(?=\\=)"
+						}
+					]
+				}
+			]
+		},
+		"sem": {
+			"patterns": [
+				{
+					"name": "meta.semstring.jac",
+					"begin": "(?x)\\b(sem)\\b(?=\\s*[[:alpha:]_]\\w*|\\s*\\n)",
+					"end": ";",
+					"beginCaptures": {
+						"1": {
+							"name": "storage.type.semstring.jac"
+						}
+					},
+					"endCaptures": {
+						"1": {
+							"name": "punctuation.terminator.statement.jac"
+						}
+					},
+					"patterns": [
+						{
+							"include": "#comments"
+						},
+						{
+							"name": "keyword.operator.assignment.jac",
+							"match": "="
+						},
+						{
+							"include": "#string"
+						},
+						{
+							"name": "entity.name.function.semstring.jac",
+							"match": "\\b([[:alpha:]_]\\w*)\\b(?=\\s*=)"
+						},
+						{
+							"name": "entity.name.namespace.jac",
+							"match": "\\b([[:alpha:]_]\\w*)\\b"
 						}
 					]
 				}
@@ -580,6 +622,10 @@
 				{
 					"name": "storage.type.class.jac",
 					"match": "(?x)\n  \\b(?<!\\.)(\n    enum | obj | node | edge | walker | class | test\n  )\\b\n"
+				},
+				{
+					"name": "storage.type.semstring.jac",
+					"match": "(?x)\\b(?<!\\.)( sem )\\b"
 				},
 				{
 					"name": "storage.type.has.jac",
