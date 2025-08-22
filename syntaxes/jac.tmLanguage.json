@@ -624,10 +624,6 @@
 					"match": "(?x)\n  \\b(?<!\\.)(\n    enum | obj | node | edge | walker | class | test\n  )\\b\n"
 				},
 				{
-					"name": "storage.type.semstring.jac",
-					"match": "(?x)\\b(?<!\\.)( sem )\\b"
-				},
-				{
 					"name": "storage.type.has.jac",
 					"match": "(?x)\\b(?<!\\.)( has )\\b"
 				},
