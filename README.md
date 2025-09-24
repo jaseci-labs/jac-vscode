@@ -20,8 +20,7 @@ Alternatively, install directly from the [VS Code marketplace](https://marketpla
 
 **For Cursor users:**
 
-
-1. Download the VSIX file: [jaclang-extension-2025.7.17.vsix](./jaclang-extension-2025.7.17.vsix)
+1. Download the VSIX file: [jaclang-extension-2025.7.17.vsix](../../../assets/vsce/jaclang-extension-2025.7.17.vsix)
 2. Open Cursor
 3. Press `Ctrl+Shift+P` (or `Cmd+Shift+P` on Mac)
 4. Type `>install from vsix` and select the command
@@ -70,4 +69,5 @@ To visualize the Jac graph while debugging, open the graph visualize view using 
 - Go to definition
 - Document symbols, workspace symbols
 - Variables hint, and documentation on hover
+- Diagnostics
 - Diagnostics
