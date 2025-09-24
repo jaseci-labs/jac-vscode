@@ -6,6 +6,27 @@ This extension provides support for the [Jac](https://doc.jaseci.org) programmin
 
 All that is needed is to have jac installed (i.e. `pip install jaclang`) and the `jac` command line tool present in your environment.
 
+## Installation
+
+**For VS Code users:**
+
+
+1. Open VS Code
+2. Go to Extensions (Ctrl+Shift+X or Cmd+Shift+X on Mac)
+3. Search for "Jac" in the marketplace
+4. Install the official "Jac" extension by JaseciLabs
+
+Alternatively, install directly from the [VS Code marketplace](https://marketplace.visualstudio.com/items?itemName=jaseci-labs.jaclang-extension).
+
+**For Cursor users:**
+
+
+1. Download the VSIX file: [jaclang-extension-2025.7.17.vsix](./jaclang-extension-2025.7.17.vsix)
+2. Open Cursor
+3. Press `Ctrl+Shift+P` (or `Cmd+Shift+P` on Mac)
+4. Type `>install from vsix` and select the command
+5. Select the downloaded VSIX file
+
 # Debugging Jaclang
 
 Note that it'll install [python extention for vscode](https://marketplace.visualstudio.com/items?itemName=ms-python.python) as a dependecy as it is needed to debug the python bytecode that jaclang produce.
