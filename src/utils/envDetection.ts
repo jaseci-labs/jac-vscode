@@ -222,3 +222,17 @@ async function directoryExists(dirPath: string): Promise<boolean> {
         return false;
     }
 }
+
+/**
+ * Validates if a given Jac executable path is working.
+ * @param jacPath The path to the Jac executable to validate.
+ * @returns Promise<boolean> True if the executable exists and responds to --version.
+ */
+export async function validateJacExecutable(jacPath: string): Promise<boolean> {
+    try {
+        const { stdout } = await exec(`"${jacPath}" --version`, { timeout: 5000 });
+        return stdout.includes('jac') || stdout.includes('Jac');
+    } catch (error) {
+        return false;
+    }
+}

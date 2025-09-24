@@ -5,19 +5,25 @@ import { registerAllCommands } from './commands';
 import { setupVisualDebuggerWebview } from './webview/visualDebugger';
 
 export async function activate(context: vscode.ExtensionContext) {
-    // Environment manager: handles env detection, selection, status bar
-    const envManager = new EnvManager(context);
-    await envManager.init();
+    try {
+        // Environment manager: handles env detection, selection, status bar
+        const envManager = new EnvManager(context);
+        await envManager.init();
 
-    // LSP client: starts Jac language server using selected environment
-    const lspClient = setupLspClient(envManager);
-    context.subscriptions.push(lspClient);
+        registerAllCommands(context, envManager);
 
-    // Register all extension commands (run, check, serve, env select, etc)
-    registerAllCommands(context, envManager);
+        // Visual debugger webview integration
+        setupVisualDebuggerWebview(context, envManager);
 
-    // Visual debugger webview integration
-    setupVisualDebuggerWebview(context, envManager);
+        // Only start LSP if we have a valid environment
+        if (envManager.getJacPath() !== 'jac' && envManager.getJacPath() !== 'jac.exe') {
+            const lspClient = await setupLspClient(envManager);
+            context.subscriptions.push(lspClient);
+        }
+    } catch (error) {
+        vscode.window.showErrorMessage(`Failed to activate Jac extension: ${error}`);
+        console.error('Extension activation error:', error);
+    }
 }
 
 export function deactivate(): Thenable<void> | undefined {

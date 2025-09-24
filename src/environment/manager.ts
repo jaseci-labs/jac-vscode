@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { findPythonEnvsWithJac, clearEnvironmentCache, isCacheValid } from '../utils/envDetection';
+import { findPythonEnvsWithJac, clearEnvironmentCache, isCacheValid, validateJacExecutable } from '../utils/envDetection';
 
 export class EnvManager {
     private context: vscode.ExtensionContext;
@@ -18,6 +18,21 @@ export class EnvManager {
 
     async init() {
         this.jacPath = this.context.globalState.get<string>('jacEnvPath');
+        
+        // Validate existing path if present
+        if (this.jacPath && !(await validateJacExecutable(this.jacPath))) {
+            vscode.window.showWarningMessage(
+                `The previously selected Jac environment is no longer valid: ${this.jacPath}`,
+                "Select New Environment"
+            ).then(action => {
+                if (action === "Select New Environment") {
+                    this.promptEnvironmentSelection();
+                }
+            });
+            this.jacPath = undefined;
+            await this.context.globalState.update('jacEnvPath', undefined);
+        }
+        
         if (!this.jacPath) {
             await this.promptEnvironmentSelection();
         }
@@ -28,6 +43,14 @@ export class EnvManager {
         if (this.jacPath) return this.jacPath;
         // Fallback: try to find jac in PATH
         return process.platform === 'win32' ? 'jac.exe' : 'jac';
+    }
+
+    /**
+     * Validates if the current Jac path is working
+     */
+    async validateCurrentEnvironment(): Promise<boolean> {
+        if (!this.jacPath) return false;
+        return await validateJacExecutable(this.jacPath);
     }
 
     async promptEnvironmentSelection(forceRefresh: boolean = false) {
@@ -137,7 +160,7 @@ export class EnvManager {
             this.statusBar.text = "$(sync~spin) Scanning Jac Envs...";
             this.statusBar.tooltip = "Scanning for Jac environments";
         } else {
-            const label = this.jacPath ? path.basename(this.jacPath) : 'No Env';
+            const label = this.jacPath ? path.basename(this.jacPath) : '$(warning) No Env';
             const cacheStatus = isCacheValid() ? '$(check)' : '$(refresh)';
             this.statusBar.text = `${cacheStatus} Jac: ${label}`;
             this.statusBar.tooltip = this.jacPath ? 

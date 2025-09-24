@@ -7,14 +7,14 @@ import {
 
 export let client: LanguageClient;
 
-export function setupLspClient(envManager: { getJacPath(): string }) {
+export async function setupLspClient(envManager: { getJacPath(): string; promptEnvironmentSelection(): Promise<void>; validateCurrentEnvironment(): Promise<boolean> }) {
     const jacPath = envManager.getJacPath();
     
     // Check if developer mode is enabled
     const config = vscode.workspace.getConfiguration('jaclang-extension');
     const isDeveloperMode = config.get<boolean>('developerMode', false);
     
-    // Use lsp2 command if developer mode is enabled, otherwise use lsp
+    // Use lsp_dev command if developer mode is enabled, otherwise use lsp
     const lspCommand = isDeveloperMode ? 'lsp_dev' : 'lsp';
     
     const serverOptions: ServerOptions = {
@@ -36,14 +36,12 @@ export function setupLspClient(envManager: { getJacPath(): string }) {
         clientOptions
     );
     
-    client.start().then(() => {
-        const message = isDeveloperMode 
-            ? 'Jac Language Server (Dev Mode) started!' 
-            : 'Jac Language Server started!';
-        vscode.window.showInformationMessage(message);
-    }).catch((error) => {
-        vscode.window.showErrorMessage('Failed to start Jac Language Server: ' + error.message);
-    });
+    await client.start();
+    
+    const message = isDeveloperMode 
+        ? 'Jac Language Server (Dev Mode) started!' 
+        : 'Jac Language Server started!';
+    vscode.window.showInformationMessage(message);
     
     return client;
 }
