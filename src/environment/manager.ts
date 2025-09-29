@@ -124,8 +124,18 @@ export class EnvManager {
                         if (venvMatch) {
                             displayName = `Jac (${venvMatch[1]})`;
                         } else {
-                            const dirName = path.basename(path.dirname(env));
-                            displayName = `Jac (${dirName})`;
+                            // For Windows: go up from Scripts folder to get environment name
+                            // For Unix: use the bin's parent directory name
+                            const dirPath = path.dirname(env);
+                            const parentDirName = path.basename(dirPath);
+                            
+                            if (parentDirName === 'Scripts' || parentDirName === 'bin') {
+                                // Go up one more level to get the actual environment name
+                                const envDirName = path.basename(path.dirname(dirPath));
+                                displayName = `Jac (${envDirName})`;
+                            } else {
+                                displayName = `Jac (${parentDirName})`;
+                            }
                         }
                     }
                 }
