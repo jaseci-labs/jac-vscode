@@ -89,6 +89,29 @@ async function walkForVenvs(baseDir: string, depth: number): Promise<string[]> {
 
 // --- Discovery Strategies ---
 
+/**
+ * Finds global jac installation using which/where command
+ */
+async function findGlobalJac(): Promise<string[]> {
+    try {
+        const command = process.platform === 'win32' ? 'where jac' : 'which jac';
+        const { stdout } = await exec(command, { timeout: 5000 });
+        const paths = stdout.trim().split('\n').filter(line => line.trim());
+        
+        // Validate each path found
+        const validPaths = [];
+        for (const jacPath of paths) {
+            if (await validateJacExecutable(jacPath.trim())) {
+                validPaths.push(jacPath.trim());
+            }
+        }
+        return validPaths;
+    } catch (error) {
+        // Command failed - jac not in PATH or command doesn't exist
+        return [];
+    }
+}
+
 async function findInPath(): Promise<string[]> {
     const jacExe = process.platform === 'win32' ? JAC_EXECUTABLE_WIN : JAC_EXECUTABLE_NIX;
     const pathDirs = process.env.PATH?.split(path.delimiter) || [];
@@ -177,7 +200,8 @@ export async function findPythonEnvsWithJac(workspaceRoot: string = process.cwd(
     // Run all discovery strategies in parallel.
     // Promise.allSettled ensures that if one strategy fails (e.g., conda not installed), the others can still succeed.
     const results = await Promise.allSettled([
-        findInPath(),
+        findGlobalJac(),      // Check for global jac first (most reliable)
+        findInPath(),         // Manual PATH scanning (backup)
         findInCondaEnvs(),
         findInWorkspace(workspaceRoot),
         findInHome(workspaceRoot)
