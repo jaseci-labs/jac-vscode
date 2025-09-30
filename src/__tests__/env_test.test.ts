@@ -79,7 +79,7 @@ describe('EnvManager (Jest)', () => {
   test('should fallback to jac in PATH if no saved env', () => {
     // Call the method that should return the Jac executable path
     const path = envManager.getJacPath();
-    console.log(`Default Jac path: ${path}`);
+
     // Verify it returns the appropriate platform-specific default
     expect(path).toBe(process.platform === 'win32' ? 'jac.exe' : 'jac');
   });
