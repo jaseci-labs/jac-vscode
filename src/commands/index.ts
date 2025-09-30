@@ -1,6 +1,4 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
-import * as fs from 'fs';
 import { runJacCommandForCurrentFile } from '../utils';
 import { COMMANDS } from '../constants';
 
@@ -34,12 +32,6 @@ export function registerAllCommands(context: vscode.ExtensionContext, envManager
         vscode.commands.registerCommand('extension.jaclang-extension.getJacPath', config => {
             // Use envManager to get the selected jac path
             return envManager.getJacPath();
-        })
-    );
-    context.subscriptions.push(
-        vscode.commands.registerCommand('extension.jaclang-extension.getPythonPath', () => {
-            // Use the new method from your EnvManager
-            return envManager.getPythonPath();
         })
     );
     context.subscriptions.push(

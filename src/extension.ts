@@ -16,11 +16,9 @@ export async function activate(context: vscode.ExtensionContext) {
         // Visual debugger webview integration
         setupVisualDebuggerWebview(context, envManager);
 
-        // Only start LSP if we have a valid environment
-        if (envManager.getJacPath() !== 'jac' && envManager.getJacPath() !== 'jac.exe') {
-            const lspClient = await setupLspClient(envManager);
-            context.subscriptions.push(lspClient);
-        }
+        const lspClient = await setupLspClient(envManager);
+        context.subscriptions.push(lspClient);
+        
     } catch (error) {
         vscode.window.showErrorMessage(`Failed to activate Jac extension: ${error}`);
         console.error('Extension activation error:', error);
