@@ -1,14 +1,12 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { findPythonEnvsWithJac, clearEnvironmentCache, isCacheValid, validateJacExecutable } from '../utils/envDetection';
+import { findPythonEnvsWithJac, validateJacExecutable } from '../utils/envDetection';
 
 export class EnvManager {
     private context: vscode.ExtensionContext;
     private statusBar: vscode.StatusBarItem;
     private jacPath: string | undefined;
-    private isScanning: boolean = false;
-    private scanCancellation: vscode.CancellationTokenSource | undefined;
 
     constructor(context: vscode.ExtensionContext) {
         this.context = context;
@@ -18,7 +16,11 @@ export class EnvManager {
     }
 
     async init() {
+        // TODO: workspaceState
         this.jacPath = this.context.globalState.get<string>('jacEnvPath');
+        
+        // Always show status bar immediately, even before environment detection
+        this.updateStatusBar();
         
         // Validate existing path if present
         if (this.jacPath && !(await validateJacExecutable(this.jacPath))) {
@@ -32,11 +34,14 @@ export class EnvManager {
             });
             this.jacPath = undefined;
             await this.context.globalState.update('jacEnvPath', undefined);
+            this.updateStatusBar(); // Update after clearing invalid path
         }
         
         if (!this.jacPath) {
             await this.promptEnvironmentSelection();
         }
+        
+        // Final status bar update to ensure it's always shown
         this.updateStatusBar();
     }
 
@@ -46,89 +51,17 @@ export class EnvManager {
         return process.platform === 'win32' ? 'jac.exe' : 'jac';
     }
 
-    /**
-     * Validates if the current Jac path is working
-     */
-    async validateCurrentEnvironment(): Promise<boolean> {
-        if (!this.jacPath) return false;
-        return await validateJacExecutable(this.jacPath);
-    }
-
-    async promptEnvironmentSelection(forceRefresh: boolean = false) {
-        if (this.isScanning) {
-            // Cancel the current scan first
-            if (this.scanCancellation) {
-                this.scanCancellation.cancel();
-                this.scanCancellation.dispose();
-                this.scanCancellation = undefined;
-            }
-            
-            // Allow user to take action even during scanning
-            const action = await vscode.window.showInformationMessage(
-                'Environment scan in progress. What would you like to do?',
-                'Enter Path Manually',
-                'Cancel & Restart Scan',
-                'Cancel'
-            );
-            
-            if (action === 'Enter Path Manually') {
-                this.isScanning = false;
-                this.updateStatusBar();
-                await this.handleManualPathEntry();
-                return;
-            } else if (action === 'Cancel & Restart Scan') {
-                this.isScanning = false;
-                this.updateStatusBar();
-                // Restart scan immediately
-                await this.promptEnvironmentSelection(forceRefresh);
-                return;
-            } else {
-                // User cancelled or didn't select anything - stop scanning
-                this.isScanning = false;
-                this.updateStatusBar();
-                return;
-            }
-        }
-
-        // Create cancellation token for this scan
-        this.scanCancellation = new vscode.CancellationTokenSource();
-        this.isScanning = true;
-        this.updateStatusBar();
-
+    async promptEnvironmentSelection() {
         try {
             const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || process.cwd();
             
-            // Show progress for environment detection with timeout and cancellation
-            const envs = await vscode.window.withProgress({
-                location: vscode.ProgressLocation.Notification,
-                title: "Discovering Jac environments",
-                cancellable: true
-            }, async (progress, token) => {
-                if (forceRefresh) {
-                    clearEnvironmentCache();
-                    progress.report({ message: "Clearing cache and scanning..." });
-                } else if (isCacheValid()) {
-                    progress.report({ message: "Using cached results..." });
-                } else {
-                    progress.report({ message: "Scanning for environments..." });
-                }
-                
-                // Add timeout to prevent infinite scanning
-                return Promise.race([
-                    findPythonEnvsWithJac(workspaceRoot, !forceRefresh),
-                    new Promise<string[]>((_, reject) => 
-                        setTimeout(() => reject(new Error('Environment scan timeout')), 15000)
-                    ),
-                    new Promise<string[]>((_, reject) => {
-                        token.onCancellationRequested(() => reject(new Error('Cancelled by user')));
-                    }),
-                    new Promise<string[]>((_, reject) => {
-                        this.scanCancellation?.token.onCancellationRequested(() => reject(new Error('Cancelled by user')));
-                    })
-                ]);
-            });
+            // Instant environment discovery - no progress dialogs needed!
+            const envs = await findPythonEnvsWithJac(workspaceRoot);
 
             if (envs.length === 0) {
+                // Always update status bar to show "No Env" even if user dismisses popup
+                this.updateStatusBar();
+                
                 const action = await vscode.window.showWarningMessage(
                     "No Jac environments found. Install Jac to enable syntax highlighting, IntelliSense, and debugging!",
                     "Install Jac Now",
@@ -141,6 +74,7 @@ export class EnvManager {
                 } else if (action === "Enter Jac Path Manually") {
                     await this.handleManualPathEntry();
                 }
+                // Status bar already updated above, so it will show "No Env" regardless of user action
                 return;
             }
 
@@ -232,39 +166,19 @@ export class EnvManager {
                 
                 // Reload window to ensure language server uses new environment
                 vscode.commands.executeCommand("workbench.action.reloadWindow");
+            } else {
+                // User cancelled the quick pick - still update status bar
+                this.updateStatusBar();
             }
         } catch (error: any) {
-            if (error?.message === 'Cancelled by user') {
-                // User cancelled - just stop scanning
-                vscode.window.showInformationMessage('Environment scan cancelled');
-            } else if (error?.message === 'Environment scan timeout') {
-                // Timeout - allow manual selection
-                vscode.window.showWarningMessage(
-                    'Environment scan timed out. You can still set up Jac manually.',
-                    'Enter Jac Path Manually',
-                    'Try Again'
-                ).then(action => {
-                    if (action === 'Enter Jac Path Manually') {
-                        this.handleManualPathEntry();
-                    } else if (action === 'Try Again') {
-                        this.promptEnvironmentSelection(true);
-                    }
-                });
-            } else {
-                vscode.window.showErrorMessage(`Error scanning for environments: ${error}`);
-            }
-        } finally {
-            this.isScanning = false;
-            if (this.scanCancellation) {
-                this.scanCancellation.dispose();
-                this.scanCancellation = undefined;
-            }
+            // Always update status bar even when there's an error
             this.updateStatusBar();
+            vscode.window.showErrorMessage(`Error finding Jac environments: ${error.message || error}`);
         }
     }
 
     async refreshEnvironments() {
-        await this.promptEnvironmentSelection(true);
+        await this.promptEnvironmentSelection();
     }
 
     /**
@@ -404,23 +318,17 @@ export class EnvManager {
     }
 
     updateStatusBar() {
-        if (this.isScanning) {
-            this.statusBar.text = "$(sync~spin) Scanning Jac Envs...";
-            this.statusBar.tooltip = "Scanning for Jac environments - Click to cancel or set manually";
+        if (this.jacPath) {
+            const isGlobal = this.jacPath === 'jac' || this.jacPath === 'jac.exe' || 
+                           (process.env.PATH?.split(path.delimiter) || []).some(dir => 
+                               path.join(dir, path.basename(this.jacPath!)) === this.jacPath);
+            
+            const label = isGlobal ? 'Jac (Global)' : 'Jac';
+            this.statusBar.text = `$(check) ${label}`;
+            this.statusBar.tooltip = `Current: ${this.jacPath}${isGlobal ? ' (Global)' : ''}\nClick to change`;
         } else {
-            if (this.jacPath) {
-                const isGlobal = this.jacPath === 'jac' || this.jacPath === 'jac.exe' || 
-                               (process.env.PATH?.split(path.delimiter) || []).some(dir => 
-                                   path.join(dir, path.basename(this.jacPath!)) === this.jacPath);
-                
-                const label = isGlobal ? 'Jac (Global)' : 'Jac';
-                const cacheStatus = isCacheValid() ? '$(check)' : '$(refresh)';
-                this.statusBar.text = `${cacheStatus} ${label}`;
-                this.statusBar.tooltip = `Current: ${this.jacPath}${isGlobal ? ' (Global)' : ''}\nClick to change or refresh`;
-            } else {
-                this.statusBar.text = '$(warning) Jac: No Env';
-                this.statusBar.tooltip = 'No Jac environment selected - Click to select';
-            }
+            this.statusBar.text = '$(warning) Jac: No Env';
+            this.statusBar.tooltip = 'No Jac environment selected - Click to select';
         }
         this.statusBar.show();
     }

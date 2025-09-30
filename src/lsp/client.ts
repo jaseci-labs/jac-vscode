@@ -7,7 +7,7 @@ import {
 
 export let client: LanguageClient;
 
-export async function setupLspClient(envManager: { getJacPath(): string; promptEnvironmentSelection(): Promise<void>; validateCurrentEnvironment(): Promise<boolean> }) {
+export async function setupLspClient(envManager: { getJacPath(): string; promptEnvironmentSelection(): Promise<void>;}) {
     const jacPath = envManager.getJacPath();
     
     // Check if developer mode is enabled

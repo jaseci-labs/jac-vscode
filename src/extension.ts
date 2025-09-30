@@ -8,9 +8,10 @@ export async function activate(context: vscode.ExtensionContext) {
     try {
         // Environment manager: handles env detection, selection, status bar
         const envManager = new EnvManager(context);
-        await envManager.init();
-
+        
         registerAllCommands(context, envManager);
+        
+        await envManager.init();
 
         // Visual debugger webview integration
         setupVisualDebuggerWebview(context, envManager);

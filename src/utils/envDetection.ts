@@ -5,37 +5,17 @@ import { promisify } from 'util';
 
 const exec = promisify(cp.exec);
 
-// --- Constants for Configuration and Clarity ---
-const CACHE_DURATION_MS = 10000; // 10 seconds
+// --- Constants ---
 const JAC_EXECUTABLE_NIX = 'jac';
 const JAC_EXECUTABLE_WIN = 'jac.exe';
 
 const COMMON_VENV_NAMES = ['.venv', 'venv', 'env', '.env', 'virtualenv', 'pyenv'];
-const COMMON_PROJECT_DIRS = ['projects', 'workspace', 'dev', 'src'];
 
-// Depth for recursive searches
-const WALK_DEPTH_DEFAULT = 3;
-const WALK_DEPTH_HOME = 4;
+// Depth for recursive searches - limited to 2 levels max for fast performance
+const WALK_DEPTH_WORKSPACE = 2;
 const WALK_DEPTH_VIRTUALENVS = 2;
 
-// --- Cache Management ---
-let environmentCache: string[] | null = null;
-let lastScanTime: number = 0;
 
-/**
- * Checks if the cache is valid and hasn't expired.
- */
-export function isCacheValid(): boolean {
-    return environmentCache !== null && (Date.now() - lastScanTime) < CACHE_DURATION_MS;
-}
-
-/**
- * Clears the environment cache, forcing a new scan on the next call.
- */
-export function clearEnvironmentCache(): void {
-    environmentCache = null;
-    lastScanTime = 0;
-}
 
 /**
  * Checks for a 'jac' executable in a given virtual environment directory.
@@ -54,14 +34,14 @@ async function getJacInVenv(venvPath: string): Promise<string | null> {
 
 /**
  * Asynchronously walks a directory structure to a specified depth looking for venvs with jac.
+ * Optimized to limit depth and avoid unnecessary deep recursion for better performance.
  * @param baseDir The directory to start from.
- * @param depth The maximum depth to recurse.
+ * @param depth The maximum depth to recurse (max 2 for workspace efficiency).
  * @returns A promise that resolves to an array of jac executable paths.
  */
 async function walkForVenvs(baseDir: string, depth: number): Promise<string[]> {
     if (depth === 0) return [];
 
-    let found: string[] = [];
     let entries: import('fs').Dirent[];
 
     try {
@@ -71,16 +51,23 @@ async function walkForVenvs(baseDir: string, depth: number): Promise<string[]> {
         return [];
     }
 
-    const promises: Promise<string[] | string | null>[] = entries.map(async (entry) => {
-        if (!entry.isDirectory()) return null;
-
+    // Filter to only directories early to avoid unnecessary processing
+    const directories = entries.filter(entry => entry.isDirectory());
+    
+    const promises: Promise<string[] | string | null>[] = directories.map(async (entry) => {
         const fullPath = path.join(baseDir, entry.name);
+        
+        // Check if this directory contains jac
         const foundJac = await getJacInVenv(fullPath);
-        const deeperFinds = walkForVenvs(fullPath, depth - 1); // Recurse deeper
-
-        // Await both results and combine them
-        const results = await Promise.all([foundJac, deeperFinds]);
-        return results.flat().filter(p => p !== null) as string[];
+        
+        // Only recurse if we have depth remaining and didn't find jac here
+        // This avoids deep searches in directories that already contain jac
+        if (depth > 1 && !foundJac) {
+            const deeperFinds = await walkForVenvs(fullPath, depth - 1);
+            return deeperFinds;
+        }
+        
+        return foundJac ? [foundJac] : [];
     });
 
     const results = await Promise.all(promises);
@@ -101,8 +88,9 @@ async function findGlobalJac(): Promise<string[]> {
         // Validate each path found
         const validPaths = [];
         for (const jacPath of paths) {
-            if (await validateJacExecutable(jacPath.trim())) {
-                validPaths.push(jacPath.trim());
+            const trimmedPath = jacPath.trim();
+            if (await validateJacExecutable(trimmedPath)) {
+                validPaths.push(trimmedPath);
             }
         }
         return validPaths;
@@ -148,83 +136,62 @@ async function findInCondaEnvs(): Promise<string[]> {
 async function findInWorkspace(workspaceRoot: string): Promise<string[]> {
     const searchTasks: Promise<string[]>[] = [];
 
-    // 1. Check common venv names in the root
+    // 1. Check common venv names in the workspace root
     for (const dirName of COMMON_VENV_NAMES) {
         searchTasks.push(getJacInVenv(path.join(workspaceRoot, dirName)).then(p => p ? [p] : []));
     }
     
-    // 2. Walk common project subdirectories
-    for (const projectDir of COMMON_PROJECT_DIRS) {
-        const fullPath = path.join(workspaceRoot, projectDir);
-        if (await directoryExists(fullPath)) {
-            searchTasks.push(walkForVenvs(fullPath, WALK_DEPTH_DEFAULT));
-        }
-    }
+    // 2. Limited search in workspace root only (2 levels deep max)
+    searchTasks.push(walkForVenvs(workspaceRoot, WALK_DEPTH_WORKSPACE));
 
     const results = await Promise.all(searchTasks);
     return results.flat();
 }
 
 async function findInHome(workspaceRoot: string): Promise<string[]> {
+    // Only check virtualenvwrapper directory for better performance
+    // Skip deep home directory scans to focus on workspace-local environments
     const homeDir = process.env.HOME || process.env.USERPROFILE;
     if (!homeDir || homeDir === workspaceRoot) return [];
 
-    const searchTasks: Promise<string[]>[] = [
-        walkForVenvs(homeDir, WALK_DEPTH_HOME) // General scan
-    ];
-
-    // Specific check for virtualenvwrapper directory
     const venvWrapperDir = path.join(homeDir, '.virtualenvs');
     if (await directoryExists(venvWrapperDir)) {
-        searchTasks.push(walkForVenvs(venvWrapperDir, WALK_DEPTH_VIRTUALENVS));
+        return await walkForVenvs(venvWrapperDir, WALK_DEPTH_VIRTUALENVS);
     }
     
-    const results = await Promise.all(searchTasks);
-    return results.flat();
+    return [];
 }
 
 
 /**
  * Finds all Python environments with the 'jac' executable.
- * Results are cached for 10 seconds to improve performance on subsequent calls.
+ * Fast and optimized for instant results by limiting workspace search to 2 levels deep
+ * and focusing on workspace-local environments similar to Python's VS Code extension.
  *
  * @param workspaceRoot The root directory of the workspace to scan. Defaults to the current working directory.
- * @param useCache Whether to use the cache. Defaults to true.
  * @returns A promise that resolves to a unique array of paths to 'jac' executables.
  */
-export async function findPythonEnvsWithJac(workspaceRoot: string = process.cwd(), useCache: boolean = true): Promise<string[]> {
-    if (useCache && isCacheValid()) {
-        return environmentCache!;
-    }
-
-    // Run all discovery strategies in parallel.
+export async function findPythonEnvsWithJac(workspaceRoot: string = process.cwd()): Promise<string[]> {
+    // Run optimized discovery strategies in parallel for instant results
     // Promise.allSettled ensures that if one strategy fails (e.g., conda not installed), the others can still succeed.
     const results = await Promise.allSettled([
         findGlobalJac(),      // Check for global jac first (most reliable)
         findInPath(),         // Manual PATH scanning (backup)
-        findInCondaEnvs(),
-        findInWorkspace(workspaceRoot),
-        findInHome(workspaceRoot)
-        // NOTE: WSL discovery is omitted for complexity/robustness but could be added back here.
-        // See discussion below for reasons.
+        findInCondaEnvs(),    // Conda environments
+        findInWorkspace(workspaceRoot), // Workspace-local environments (2 levels deep max)
+        findInHome(workspaceRoot) // Only virtualenvwrapper, no deep home scan
     ]);
 
     const allEnvs: string[] = [];
     for (const result of results) {
         if (result.status === 'fulfilled' && result.value) {
             allEnvs.push(...result.value);
-        } else if (result.status === 'rejected') {
-            // In a real production app, you might use a proper logger
-            console.warn(`A discovery strategy failed:`, result.reason);
         }
+        // Silently handle failures for cleaner UX since search is now instant
     }
 
-    // Deduplicate and cache the results
-    const uniqueEnvs = Array.from(new Set(allEnvs));
-    environmentCache = uniqueEnvs;
-    lastScanTime = Date.now();
-    
-    return uniqueEnvs;
+    // Deduplicate and return immediately
+    return Array.from(new Set(allEnvs));
 }
 
 // --- Utility Helpers ---
