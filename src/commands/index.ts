@@ -2,16 +2,12 @@ import * as vscode from 'vscode';
 import { runJacCommandForCurrentFile } from '../utils';
 import { COMMANDS } from '../constants';
 import { getLspManager } from '../extension';
+import { EnvManager } from '../environment/manager';
 
-export function registerAllCommands(context: vscode.ExtensionContext, envManager: any) {
+export function registerAllCommands(context: vscode.ExtensionContext, envManager: EnvManager) {
     context.subscriptions.push(
         vscode.commands.registerCommand(COMMANDS.SELECT_ENV, () => {
             envManager.promptEnvironmentSelection();
-        })
-    );
-    context.subscriptions.push(
-        vscode.commands.registerCommand(COMMANDS.REFRESH_ENV, () => {
-            envManager.refreshEnvironments();
         })
     );
     context.subscriptions.push(
@@ -30,7 +26,7 @@ export function registerAllCommands(context: vscode.ExtensionContext, envManager
         })
     );
     context.subscriptions.push(
-        vscode.commands.registerCommand('extension.jaclang-extension.getJacPath', config => {
+        vscode.commands.registerCommand(COMMANDS.GET_JAC_PATH, () => {
             // Use envManager to get the selected jac path
             return envManager.getJacPath();
         })

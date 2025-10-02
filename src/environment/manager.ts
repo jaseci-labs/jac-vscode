@@ -2,12 +2,12 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { findPythonEnvsWithJac, validateJacExecutable } from '../utils/envDetection';
+import { getLspManager } from '../extension';
 
 export class EnvManager {
     private context: vscode.ExtensionContext;
     private statusBar: vscode.StatusBarItem;
     private jacPath: string | undefined;
-    private lspRestartCallback: (() => Promise<void>) | undefined;
 
     constructor(context: vscode.ExtensionContext) {
         this.context = context;
@@ -16,9 +16,6 @@ export class EnvManager {
         context.subscriptions.push(this.statusBar);
     }
 
-    setLspRestartCallback(callback: () => Promise<void>) {
-        this.lspRestartCallback = callback;
-    }
 
     async init() {
         // TODO: workspaceState
@@ -182,9 +179,6 @@ export class EnvManager {
         }
     }
 
-    async refreshEnvironments() {
-        await this.promptEnvironmentSelection();
-    }
 
     /**
      * Handles manual path entry for Jac executable
@@ -326,9 +320,11 @@ export class EnvManager {
     }
 
     private async restartLanguageServer(): Promise<void> {
-        if (this.lspRestartCallback) {
+        const lspManager = getLspManager();
+        if (lspManager) {
             try {
-                await this.lspRestartCallback();
+                vscode.window.showInformationMessage('Restarting Jac Language Server to apply environment changes...');
+                await lspManager.restart();
             } catch (error: any) {
                 vscode.window.showErrorMessage(`Failed to restart language server: ${error.message || error}`);
                 // Fallback to window reload if restart fails
@@ -336,7 +332,7 @@ export class EnvManager {
                 vscode.commands.executeCommand("workbench.action.reloadWindow");
             }
         } else {
-            // Fallback to window reload if no LSP restart callback is set
+            // Fallback to window reload if no LSP manager is available
             vscode.window.showInformationMessage('Reloading window to apply environment changes...');
             vscode.commands.executeCommand("workbench.action.reloadWindow");
         }

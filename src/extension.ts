@@ -21,13 +21,6 @@ export async function activate(context: vscode.ExtensionContext) {
         lspManager = new LspManager(envManager);
         await lspManager.start();
 
-        // Set up the LSP restart callback in the environment manager
-        envManager.setLspRestartCallback(async () => {
-            if (lspManager) {
-                await lspManager.restart();
-            }
-        });
-
         context.subscriptions.push({
             dispose: () => lspManager?.stop()
         });

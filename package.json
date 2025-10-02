@@ -61,7 +61,7 @@
     ],
     "commands": [
       {
-        "command": "jac.visualize",
+        "command": "jaclang-extension.visualizeGraph",
         "title": "jacvis: Visualize Jaclang Graph"
       },
       {
