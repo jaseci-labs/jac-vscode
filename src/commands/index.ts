@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { runJacCommandForCurrentFile } from '../utils';
 import { COMMANDS } from '../constants';
+import { getLspManager } from '../extension';
 
 export function registerAllCommands(context: vscode.ExtensionContext, envManager: any) {
     context.subscriptions.push(
@@ -41,6 +42,21 @@ export function registerAllCommands(context: vscode.ExtensionContext, envManager
             
             // Toggle the mode
             await config.update('developerMode', !currentMode, vscode.ConfigurationTarget.Global);
+        })
+    );
+    context.subscriptions.push(
+        vscode.commands.registerCommand(COMMANDS.RESTART_LSP, async () => {
+            const lspManager = getLspManager();
+            if (lspManager) {
+                try {
+                    vscode.window.showInformationMessage('Restarting Jac Language Server...');
+                    await lspManager.restart();
+                } catch (error: any) {
+                    vscode.window.showErrorMessage(`Failed to restart Jac Language Server: ${error.message || error}`);
+                }
+            } else {
+                vscode.window.showErrorMessage('Language Server not available for restart.');
+            }
         })
     );
 }
