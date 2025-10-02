@@ -1,6 +1,7 @@
 {
 	"name": "The Jac Programming Language",
 	"scopeName": "source.jac",
+	"fileTypes": ["jac"],
 	"patterns": [
 		{
 			"include": "#elements"
