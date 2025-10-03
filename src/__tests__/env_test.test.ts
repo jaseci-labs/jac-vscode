@@ -7,6 +7,21 @@ import { EnvManager } from '../environment/manager';
 import * as vscode from 'vscode';
 import * as envDetection from '../utils/envDetection';
 
+
+// Inline mock for vscode-languageclient
+jest.mock('vscode-languageclient/node', () => {
+  return {
+    LanguageClient: class {
+      start = jest.fn();
+      stop = jest.fn();
+      dispose = jest.fn();
+    },
+    LanguageClientOptions: jest.fn(),
+    ServerOptions: jest.fn(),
+  };
+});
+
+
 // Mock the vscode module to simulate VSCode API behavior
 jest.mock('vscode', () => {
   const statusBarItem = {

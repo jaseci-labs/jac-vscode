@@ -6,6 +6,7 @@ import type { EnvManager } from '../environment/manager';
 export class LspManager {
     private client: LanguageClient | undefined;
     private envManager: EnvManager;
+    private outputChannel: vscode.OutputChannel | undefined;
 
     constructor(envManager: EnvManager) {
         this.envManager = envManager;
@@ -24,14 +25,13 @@ export class LspManager {
             debug: { command: jacPath, args: ['lsp'] }
         };
 
+        this.outputChannel = vscode.window.createOutputChannel('Jac Language Server');
         const clientOptions: LanguageClientOptions = {
             documentSelector: [{ scheme: 'file', language: 'jac' }],
+            outputChannel: this.outputChannel,
         };
-
-        // Use a unique client ID to prevent conflicts with previous instances
-        const clientId = `jacLanguageServer-${Date.now()}`;
         this.client = new LanguageClient(
-            clientId,
+            'jacLanguageServer',
             'Jac Language Server',
             serverOptions,
             clientOptions
@@ -52,7 +52,10 @@ export class LspManager {
             } finally {
                 this.client = undefined;
             }
-            vscode.window.showInformationMessage("Jac Language Server stopped.");
+            if (this.outputChannel) {
+                this.outputChannel.dispose();
+                this.outputChannel = undefined;
+            }
         }
     }
 
