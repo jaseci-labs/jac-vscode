@@ -130,6 +130,10 @@
 							"match": "="
 						},
 						{
+							"name": "keyword.operator.assignment.jac",
+							"match": "is"
+						},
+						{
 							"include": "#string"
 						},
 						{
