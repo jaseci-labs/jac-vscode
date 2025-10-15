@@ -339,8 +339,188 @@
 				},
 				{
 					"include": "#string"
+				},
+				{
+					"include": "#jsx"
 				}
 			]
+		},
+		"jsx": {
+			"patterns": [
+				{
+					"include": "#jsx-tag-fragment"
+				},
+				{
+					"include": "#jsx-tag"
+				}
+			]
+		},
+		"jsx-tag-fragment": {
+			"name": "meta.jsx.fragment.jac",
+			"begin": "(<>)",
+			"end": "(</>)",
+			"beginCaptures": {
+				"1": {
+					"name": "punctuation.definition.tag.jsx.jac"
+				}
+			},
+			"endCaptures": {
+				"1": {
+					"name": "punctuation.definition.tag.jsx.jac"
+				}
+			},
+			"patterns": [
+				{
+					"include": "#jsx-children"
+				}
+			]
+		},
+		"jsx-tag": {
+			"name": "meta.jsx.jac",
+			"begin": "(?x)\n  (<)\n  (?:\n    ([_$[:alpha:]][-_$[:alnum:]]*(?:\\.[_$[:alpha:]][-_$[:alnum:]]*)*)\n  )\n",
+			"end": "(/?>)",
+			"beginCaptures": {
+				"1": {
+					"name": "punctuation.definition.tag.begin.jsx.jac"
+				},
+				"2": {
+					"name": "entity.name.tag.jsx.jac"
+				}
+			},
+			"endCaptures": {
+				"1": {
+					"name": "punctuation.definition.tag.end.jsx.jac"
+				}
+			},
+			"patterns": [
+				{
+					"include": "#jsx-tag-attributes"
+				},
+				{
+					"include": "#jsx-tag-in-expression"
+				}
+			]
+		},
+		"jsx-tag-attributes": {
+			"patterns": [
+				{
+					"include": "#jsx-tag-attribute-name"
+				},
+				{
+					"include": "#jsx-tag-attribute-assignment"
+				},
+				{
+					"include": "#jsx-spread-attribute"
+				},
+				{
+					"include": "#jsx-string-double-quoted"
+				},
+				{
+					"include": "#jsx-string-single-quoted"
+				},
+				{
+					"include": "#jsx-evaluated-code"
+				}
+			]
+		},
+		"jsx-tag-attribute-name": {
+			"name": "entity.other.attribute-name.jsx.jac",
+			"match": "(?x)\n  [_$[:alpha:]][-_$[:alnum:]]*\n"
+		},
+		"jsx-tag-attribute-assignment": {
+			"name": "keyword.operator.assignment.jsx.jac",
+			"match": "="
+		},
+		"jsx-spread-attribute": {
+			"begin": "(\\{)(\\.\\.\\.)",
+			"end": "(\\})",
+			"beginCaptures": {
+				"1": {
+					"name": "punctuation.section.embedded.begin.jsx.jac"
+				},
+				"2": {
+					"name": "keyword.operator.spread.jsx.jac"
+				}
+			},
+			"endCaptures": {
+				"1": {
+					"name": "punctuation.section.embedded.end.jsx.jac"
+				}
+			},
+			"patterns": [
+				{
+					"include": "#general"
+				}
+			]
+		},
+		"jsx-string-double-quoted": {
+			"name": "string.quoted.double.jsx.jac",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"include": "#string-content"
+				}
+			]
+		},
+		"jsx-string-single-quoted": {
+			"name": "string.quoted.single.jsx.jac",
+			"begin": "'",
+			"end": "'",
+			"patterns": [
+				{
+					"include": "#string-content"
+				}
+			]
+		},
+		"jsx-evaluated-code": {
+			"name": "meta.embedded.expression.jsx.jac",
+			"begin": "\\{",
+			"end": "\\}",
+			"beginCaptures": {
+				"0": {
+					"name": "punctuation.section.embedded.begin.jsx.jac"
+				}
+			},
+			"endCaptures": {
+				"0": {
+					"name": "punctuation.section.embedded.end.jsx.jac"
+				}
+			},
+			"patterns": [
+				{
+					"include": "#general"
+				}
+			]
+		},
+		"jsx-tag-in-expression": {
+			"begin": "(?<=(?:^|>))",
+			"end": "(?=</)",
+			"patterns": [
+				{
+					"include": "#jsx-children"
+				}
+			]
+		},
+		"jsx-children": {
+			"patterns": [
+				{
+					"include": "#jsx-tag-fragment"
+				},
+				{
+					"include": "#jsx-tag"
+				},
+				{
+					"include": "#jsx-evaluated-code"
+				},
+				{
+					"include": "#jsx-text"
+				}
+			]
+		},
+		"jsx-text": {
+			"name": "string.unquoted.jsx.jac",
+			"match": "[^<>{}\n]+"
 		},
 		"comments": {
 			"patterns": [
@@ -622,7 +802,7 @@
 				},
 				{
 					"name": "storage.modifier.declaration.jac",
-					"match": "(?x)\n  \\b(?<!\\.)(\n    priv|protect|pub|static|override|let|abs|glob|global|nonlocal\n  )\\b\n"
+					"match": "(?x)\n  \\b(?<!\\.)(\n    priv|protect|pub|static|override|let|abs|glob|global|nonlocal|cl\n  )\\b\n"
 				},
 				{
 					"name": "storage.type.class.jac",
