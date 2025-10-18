@@ -813,7 +813,7 @@
 					"match": "(?x)\\b(?<!\\.)( has )\\b"
 				},
 				{
-					"match": "(?x)\n  ^\\s*(\n    case | match\n  )(?=\\s*([-+\\w\\d(\\[{'\":#]|$))\\b\n",
+					"match": "(?x)\n  ^\\s*(\n    case | match| switch | default\n  )(?=\\s*([-+\\w\\d(\\[{'\":#]|$))\\b\n",
 					"captures": {
 						"1": {
 							"name": "keyword.control.flow.jac"
