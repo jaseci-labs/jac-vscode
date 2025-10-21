@@ -1,12 +1,13 @@
 import * as vscode from 'vscode';
 import { makeWebView, getDebugGraphData } from '../visual_debugger/visdbg';
+import { COMMANDS } from '../constants';
 
 export function setupVisualDebuggerWebview(context: vscode.ExtensionContext, envManager: any) {
     let webviewPanel: vscode.WebviewPanel | undefined;
     let graphData: JSON = JSON.parse('{}');
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('jac.visualize', async () => {
+        vscode.commands.registerCommand(COMMANDS.VISUALIZE, async () => {
             if (webviewPanel) {
                 webviewPanel.reveal();
             } else {
