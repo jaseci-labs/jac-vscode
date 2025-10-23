@@ -16,7 +16,7 @@ export async function activate(context: vscode.ExtensionContext) {
         registerAllCommands(context, envManager);
         await envManager.init();
 
-        setupVisualDebuggerWebview(context, envManager);
+        setupVisualDebuggerWebview(context);
 
         lspManager = new LspManager(envManager);
         await lspManager.start();

@@ -22,7 +22,7 @@ export function makeWebView(): vscode.WebviewPanel  {
  }
 
 
-export async function getDebugGraphData(envManager?: any): Promise<JSON | null> {
+export async function getDebugGraphData(): Promise<JSON | null> {
 
     const debugSession = vscode.debug.activeDebugSession;
     if (!debugSession) {
@@ -48,9 +48,6 @@ export async function getDebugGraphData(envManager?: any): Promise<JSON | null> 
 
     // Use the top stack frame
     const frameId = stackTrace.stackFrames[0].id;
-
-    // Use the selected jac environment path for visualization
-    const jacPath = envManager ? envManager.getJacPath() : 'jac';
     
     // Evaluate to get the graph data using the correct jac path
     const response = await debugSession.customRequest('evaluate', {

@@ -29,9 +29,8 @@ describe('Visual Debugger (Essential Tests Only)', () => {
 
   test('should register visualize command with correct ID', () => {
     const context: any = { subscriptions: [] };
-    const envManager: any = { getJacPath: jest.fn() };
-    
-    setupVisualDebuggerWebview(context, envManager);
+
+    setupVisualDebuggerWebview(context);
 
     expect(vscode.commands.registerCommand).toHaveBeenCalledWith(
       COMMANDS.VISUALIZE,
