@@ -54,7 +54,9 @@ export async function getDebugGraphData(envManager?: any): Promise<JSON | null> 
     
     // Evaluate to get the graph data using the correct jac path
     const response = await debugSession.customRequest('evaluate', {
-        expression: "printgraph(format='json')",
+        // Dynamically import and call 'printgraph' from Jac runtime builtins
+        // Ensures graph retrieval works even if 'printgraph' is not imported in the current frame
+        expression: `__import__('jaclang.runtimelib.builtin', fromlist=['printgraph']).printgraph(format='json')`,
         frameId,
         context: 'clipboard'
     });
