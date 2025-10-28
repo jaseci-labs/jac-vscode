@@ -9,7 +9,7 @@ export function runJacCommandForCurrentFile(command: string, envManager?: any) {
             terminal = vscode.window.createTerminal(TERMINAL_NAME);
         }
         terminal.show();
-        
+
         const jacPath = envManager ? envManager.getJacPath() : 'jac';
         terminal.sendText(`${jacPath} ${command} "${filePath}"`);
     }

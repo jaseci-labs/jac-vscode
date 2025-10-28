@@ -53,20 +53,20 @@ async function walkForVenvs(baseDir: string, depth: number): Promise<string[]> {
 
     // Filter to only directories early to avoid unnecessary processing
     const directories = entries.filter(entry => entry.isDirectory());
-    
+
     const promises: Promise<string[] | string | null>[] = directories.map(async (entry) => {
         const fullPath = path.join(baseDir, entry.name);
-        
+
         // Check if this directory contains jac
         const foundJac = await getJacInVenv(fullPath);
-        
+
         // Only recurse if we have depth remaining and didn't find jac here
         // This avoids deep searches in directories that already contain jac
         if (depth > 1 && !foundJac) {
             const deeperFinds = await walkForVenvs(fullPath, depth - 1);
             return deeperFinds;
         }
-        
+
         return foundJac ? [foundJac] : [];
     });
 
@@ -84,7 +84,7 @@ async function findGlobalJac(): Promise<string[]> {
         const command = process.platform === 'win32' ? 'where jac' : 'which jac';
         const { stdout } = await exec(command, { timeout: 5000 });
         const paths = stdout.trim().split('\n').filter(line => line.trim());
-        
+
         // Validate each path found
         const validPaths = [];
         for (const jacPath of paths) {
@@ -140,7 +140,7 @@ async function findInWorkspace(workspaceRoot: string): Promise<string[]> {
     for (const dirName of COMMON_VENV_NAMES) {
         searchTasks.push(getJacInVenv(path.join(workspaceRoot, dirName)).then(p => p ? [p] : []));
     }
-    
+
     // 2. Limited search in workspace root only (2 levels deep max)
     searchTasks.push(walkForVenvs(workspaceRoot, WALK_DEPTH_WORKSPACE));
 
@@ -158,7 +158,7 @@ async function findInHome(workspaceRoot: string): Promise<string[]> {
     if (await directoryExists(venvWrapperDir)) {
         return await walkForVenvs(venvWrapperDir, WALK_DEPTH_VIRTUALENVS);
     }
-    
+
     return [];
 }
 

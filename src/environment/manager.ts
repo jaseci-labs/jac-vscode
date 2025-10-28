@@ -20,10 +20,10 @@ export class EnvManager {
     async init() {
         // TODO: workspaceState
         this.jacPath = this.context.globalState.get<string>('jacEnvPath');
-        
+
         // Always show status bar immediately, even before environment detection
         this.updateStatusBar();
-        
+
         // Validate existing path if present
         if (this.jacPath && !(await validateJacExecutable(this.jacPath))) {
             vscode.window.showWarningMessage(
@@ -38,11 +38,11 @@ export class EnvManager {
             await this.context.globalState.update('jacEnvPath', undefined);
             this.updateStatusBar(); // Update after clearing invalid path
         }
-        
+
         if (!this.jacPath) {
             await this.promptEnvironmentSelection();
         }
-        
+
         // Final status bar update to ensure it's always shown
         this.updateStatusBar();
     }
@@ -56,21 +56,21 @@ export class EnvManager {
     async promptEnvironmentSelection() {
         try {
             const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || process.cwd();
-            
+
             // Instant environment discovery - no progress dialogs needed!
             const envs = await findPythonEnvsWithJac(workspaceRoot);
 
             if (envs.length === 0) {
                 // Always update status bar to show "No Env" even if user dismisses popup
                 this.updateStatusBar();
-                
+
                 const action = await vscode.window.showWarningMessage(
                     "No Jac environments found. Install Jac to enable syntax highlighting, IntelliSense, and debugging!",
                     "Install Jac Now",
                     "Enter Jac Path Manually",
                     "Cancel"
                 );
-                
+
                 if (action === "Install Jac Now") {
                     vscode.env.openExternal(vscode.Uri.parse('https://www.jac-lang.org/learn/installation/'));
                 } else if (action === "Enter Jac Path Manually") {
@@ -82,12 +82,12 @@ export class EnvManager {
 
             // Create quick pick items exactly like VS Code Python interpreter selector
             const quickPickItems = envs.map(env => {
-                const isGlobal = env === 'jac' || env === 'jac.exe' || 
-                               (process.env.PATH?.split(path.delimiter) || []).some(dir => 
+                const isGlobal = env === 'jac' || env === 'jac.exe' ||
+                               (process.env.PATH?.split(path.delimiter) || []).some(dir =>
                                    path.join(dir, path.basename(env)) === env);
-                
+
                 let displayName = '';
-                
+
                 if (isGlobal) {
                     displayName = 'Jac';
                 } else {
@@ -95,7 +95,7 @@ export class EnvManager {
                     if (env.includes('conda') || env.includes('miniconda') || env.includes('anaconda')) {
                         const envMatch = env.match(/envs[\/\\]([^\/\\]+)/);
                         displayName = envMatch ? `Jac (${envMatch[1]})` : 'Jac';
-                    } 
+                    }
                     // All other environments (venv, local, etc.)
                     else {
                         const venvMatch = env.match(/([^\/\\]*(?:\.?venv|virtualenv)[^\/\\]*)/);
@@ -106,7 +106,7 @@ export class EnvManager {
                             // For Unix: use the bin's parent directory name
                             const dirPath = path.dirname(env);
                             const parentDirName = path.basename(dirPath);
-                            
+
                             if (parentDirName === 'Scripts' || parentDirName === 'bin') {
                                 // Go up one more level to get the actual environment name
                                 const envDirName = path.basename(path.dirname(dirPath));
@@ -117,7 +117,7 @@ export class EnvManager {
                         }
                     }
                 }
-                
+
                 return {
                     label: displayName,
                     description: this.formatPathForDisplay(env),
@@ -158,14 +158,14 @@ export class EnvManager {
                 this.jacPath = choice.env;
                 await this.context.globalState.update('jacEnvPath', choice.env);
                 this.updateStatusBar();
-                
+
                 // Show success message with path details
                 const displayPath = this.formatPathForDisplay(choice.env);
                 vscode.window.showInformationMessage(
                     `Selected Jac environment: ${choice.label}`,
                     { detail: `Path: ${displayPath}` }
                 );
-                
+
                 // Restart language server to use new environment
                 await this.restartLanguageServer();
             } else {
@@ -200,7 +200,7 @@ export class EnvManager {
         });
 
         if (manualPath) {
-            const normalizedPath = manualPath.startsWith('~') 
+            const normalizedPath = manualPath.startsWith('~')
                 ? path.join(process.env.HOME || process.env.USERPROFILE || '', manualPath.slice(1))
                 : manualPath;
 
@@ -209,11 +209,11 @@ export class EnvManager {
                 this.jacPath = normalizedPath;
                 await this.context.globalState.update('jacEnvPath', normalizedPath);
                 this.updateStatusBar();
-                
+
                 vscode.window.showInformationMessage(
                     `Jac environment set to: ${this.formatPathForDisplay(normalizedPath)}`
                 );
-                
+
                 await this.restartLanguageServer();
             } else {
                 const retry = await vscode.window.showErrorMessage(
@@ -221,7 +221,7 @@ export class EnvManager {
                     "Retry",
                     "Browse for File"
                 );
-                
+
                 if (retry === "Retry") {
                     await this.handleManualPathEntry();
                 } else if (retry === "Browse for File") {
@@ -252,17 +252,17 @@ export class EnvManager {
 
         if (fileUri && fileUri.length > 0) {
             const selectedPath = fileUri[0].fsPath;
-            
+
             // Validate the selected file
             if (await validateJacExecutable(selectedPath)) {
                 this.jacPath = selectedPath;
                 await this.context.globalState.update('jacEnvPath', selectedPath);
                 this.updateStatusBar();
-                
+
                 vscode.window.showInformationMessage(
                     `Jac environment set to: ${this.formatPathForDisplay(selectedPath)}`
                 );
-                
+
                 await this.restartLanguageServer();
             } else {
                 const retry = await vscode.window.showErrorMessage(
@@ -270,7 +270,7 @@ export class EnvManager {
                     "Try Again",
                     "Enter Path Manually"
                 );
-                
+
                 if (retry === "Try Again") {
                     await this.handleFileBrowser();
                 } else if (retry === "Enter Path Manually") {
@@ -286,12 +286,12 @@ export class EnvManager {
      */
     private formatPathForDisplay(envPath: string): string {
         const homeDir = process.env.HOME || process.env.USERPROFILE || '';
-        
+
         // Replace home directory with ~
         if (homeDir && envPath.startsWith(homeDir)) {
             return envPath.replace(homeDir, '~');
         }
-        
+
         // For very long paths, show just the relevant parts
         const pathParts = envPath.split(path.sep);
         if (pathParts.length > 6) {
@@ -299,16 +299,16 @@ export class EnvManager {
             const end = pathParts.slice(-3).join(path.sep);
             return `${start}${path.sep}...${path.sep}${end}`;
         }
-        
+
         return envPath;
     }
 
     updateStatusBar() {
         if (this.jacPath) {
-            const isGlobal = this.jacPath === 'jac' || this.jacPath === 'jac.exe' || 
-                           (process.env.PATH?.split(path.delimiter) || []).some(dir => 
+            const isGlobal = this.jacPath === 'jac' || this.jacPath === 'jac.exe' ||
+                           (process.env.PATH?.split(path.delimiter) || []).some(dir =>
                                path.join(dir, path.basename(this.jacPath!)) === this.jacPath);
-            
+
             const label = isGlobal ? 'Jac (Global)' : 'Jac';
             this.statusBar.text = `$(check) ${label}`;
             this.statusBar.tooltip = `Current: ${this.jacPath}${isGlobal ? ' (Global)' : ''}\nClick to change`;

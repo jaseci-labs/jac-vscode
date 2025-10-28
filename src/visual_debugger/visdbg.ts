@@ -48,7 +48,7 @@ export async function getDebugGraphData(): Promise<JSON | null> {
 
     // Use the top stack frame
     const frameId = stackTrace.stackFrames[0].id;
-    
+
     // Evaluate to get the graph data using the correct jac path
     const response = await debugSession.customRequest('evaluate', {
         // Dynamically import and call 'printgraph' from Jac runtime builtins
