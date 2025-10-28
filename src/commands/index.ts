@@ -35,7 +35,7 @@ export function registerAllCommands(context: vscode.ExtensionContext, envManager
         vscode.commands.registerCommand(COMMANDS.TOGGLE_DEV_MODE, async () => {
             const config = vscode.workspace.getConfiguration('jaclang-extension');
             const currentMode = config.get<boolean>('developerMode', false);
-            
+
             // Toggle the mode
             await config.update('developerMode', !currentMode, vscode.ConfigurationTarget.Global);
         })

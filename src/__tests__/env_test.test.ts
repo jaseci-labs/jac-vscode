@@ -32,7 +32,7 @@ jest.mock('vscode', () => {
     tooltip: '',
     command: undefined,
   };
-  
+
   return {
     window: {
       createStatusBarItem: () => statusBarItem,
@@ -63,8 +63,8 @@ jest.mock('vscode', () => {
 });
 
 jest.mock('../utils/envDetection', () => ({
-  findPythonEnvsWithJac: jest.fn(),  
-  validateJacExecutable: jest.fn(),  
+  findPythonEnvsWithJac: jest.fn(),
+  validateJacExecutable: jest.fn(),
 }));
 
 // Mock the LspManager class
@@ -87,19 +87,19 @@ describe('EnvManager (Jest)', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Reset LSP manager mock
     mockLspManager.start.mockClear();
     mockLspManager.stop.mockClear();
     mockLspManager.restart.mockClear();
     mockLspManager.getClient.mockClear();
-    
+
     context = {
       globalState: {
         get: jest.fn().mockReturnValue(undefined),
-        update: jest.fn().mockResolvedValue(undefined), 
+        update: jest.fn().mockResolvedValue(undefined),
       },
-      subscriptions: [],  
+      subscriptions: [],
     };
 
     envManager = new EnvManager(context);
@@ -107,7 +107,7 @@ describe('EnvManager (Jest)', () => {
 
   /**
    * TEST-1: Default behavior when no environment is configured
-   * 
+   *
    * - EnvManager should provide a sensible default when no Jac environment is saved
    * - The default should be platform-appropriate ('jac.exe' on Windows, 'jac' on Unix)
    *
@@ -122,7 +122,7 @@ describe('EnvManager (Jest)', () => {
 
   /**
    * TEST 2: Status bar updates correctly when environment is set
-   * 
+   *
    * - Status bar text is updated to show current Jac environment
    * - Status bar is properly displayed to the user
     *
@@ -137,7 +137,7 @@ describe('EnvManager (Jest)', () => {
 
   /**
    * TEST 3: Manual path entry - successful validation
-   * 
+   *
    * What we're testing:
    * - User can manually enter a path to a Jac executable
    * - Valid paths are accepted and saved
@@ -158,7 +158,7 @@ describe('EnvManager (Jest)', () => {
 
   /**
    * TEST 4: Manual path entry - validation failure and retry
-   * 
+   *
    * - Invalid paths are rejected with error message
    * - User is prompted to retry after entering invalid path
    * - Error handling works correctly in the retry flow
@@ -168,7 +168,7 @@ describe('EnvManager (Jest)', () => {
     (envDetection.validateJacExecutable as jest.Mock).mockResolvedValue(false);
     (vscode.window.showInputBox as jest.Mock)
       .mockResolvedValueOnce('/bad/jac')
-      .mockResolvedValueOnce(undefined); 
+      .mockResolvedValueOnce(undefined);
     (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue('Retry');
 
     await (envManager as any).handleManualPathEntry();
@@ -179,11 +179,11 @@ describe('EnvManager (Jest)', () => {
 
   /**
    * TEST 5: Successful environment selection from auto-detected environments
-   * 
+   *
    * - Auto-detection finds available Jac environments
    * - User can select from a list of found environments
    * - Selected environment is saved and applied
-   * 
+   *
    */
   test('should prompt environment selection when envs found', async () => {
 
@@ -203,10 +203,10 @@ describe('EnvManager (Jest)', () => {
 
   /**
    * TEST 6: Warning displayed when no environments are found
-   * 
+   *
    * - Appropriate warning is shown when no Jac environments are detected
    * - User gets helpful guidance when Jac is not installed
-   * 
+   *
    */
   test('should show warning when no envs are found', async () => {
 
@@ -225,11 +225,11 @@ describe('EnvManager (Jest)', () => {
 
   /**
    * TEST 7: Initialization with saved environment path
-   * 
+   *
    * - EnvManager correctly loads a previously saved environment path
    * - Status bar is updated with the saved environment
    * - No prompting occurs when valid saved environment exists
-   * 
+   *
    */
   test('should initialize with saved environment path', async () => {
 
@@ -244,11 +244,11 @@ describe('EnvManager (Jest)', () => {
 
   /**
    * TEST 8: Initialization handles invalid saved environment
-   * 
+   *
    * - Invalid saved environments are detected and cleared
    * - User is warned about the invalid environment
    * - New environment selection is prompted
-   * 
+   *
    */
   test('should handle invalid saved environment during init', async () => {
 
@@ -267,11 +267,11 @@ describe('EnvManager (Jest)', () => {
 
   /**
    * TEST 9: User cancels environment selection
-   * 
+   *
    * - Graceful handling when user cancels the environment selection dialog
    * - Status bar still updates appropriately even when user cancels
    * - No errors occur when user dismisses dialogs
-   * 
+   *
    */
   test('should handle user cancellation of environment selection', async () => {
 
@@ -286,11 +286,11 @@ describe('EnvManager (Jest)', () => {
 
   /**
    * TEST 10: Language server restart without VSCode reload on environment change
-   * 
+   *
    * - When LSP manager is available, it should restart the language server
    * - VSCode window reload should NOT be called when LSP manager exists
    * - Success message should be shown for environment change
-   * 
+   *
    */
   test('should restart language server without VSCode reload when environment changes', async () => {
     (getLspManager as jest.Mock).mockReturnValue(mockLspManager);
@@ -304,7 +304,7 @@ describe('EnvManager (Jest)', () => {
     await envManager.promptEnvironmentSelection();
 
     expect(mockLspManager.restart).toHaveBeenCalledTimes(1);
-    
+
     expect(vscode.commands.executeCommand).not.toHaveBeenCalledWith('workbench.action.reloadWindow');
     expect(context.globalState.update).toHaveBeenCalledWith('jacEnvPath', '/new/jac/path');
     expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
@@ -318,11 +318,11 @@ describe('EnvManager (Jest)', () => {
 
   /**
    * TEST 11: Fallback to VSCode reload when LSP manager is unavailable
-   * 
+   *
    * - When LSP manager is not available, fall back to VSCode reload
    * - Appropriate fallback message should be shown
    * - Environment change should still be saved
-   * 
+   *
    */
   test('should fallback to VSCode reload when LSP manager unavailable', async () => {
     (getLspManager as jest.Mock).mockReturnValue(undefined);
@@ -345,11 +345,11 @@ describe('EnvManager (Jest)', () => {
 
   /**
    * TEST 12: Handle LSP manager restart failure with graceful fallback
-   * 
+   *
    * - When LSP restart fails, should show error and fall back to reload
    * - Should handle restart errors gracefully without crashing
    * - Environment should still be saved even if restart fails
-   * 
+   *
    */
   test('should handle LSP restart failure and fallback to reload', async () => {
     const mockError = new Error('LSP restart failed');
@@ -377,11 +377,11 @@ describe('EnvManager (Jest)', () => {
 
   /**
    * TEST 13: Manual path entry with successful LSP restart
-   * 
+   *
    * - Manual path entry should trigger LSP restart when LSP manager is available
    * - Should not reload VSCode when LSP restart succeeds
    * - Should validate path before attempting restart
-   * 
+   *
    */
   test('should restart LSP after successful manual path entry', async () => {
     (getLspManager as jest.Mock).mockReturnValue(mockLspManager);
@@ -401,11 +401,11 @@ describe('EnvManager (Jest)', () => {
 
   /**
    * TEST 14: File browser selection with successful LSP restart
-   * 
+   *
    * - File browser selection should trigger LSP restart when available
    * - Should not reload VSCode when LSP restart succeeds
    * - Should validate selected file before attempting restart
-   * 
+   *
    */
   test('should restart LSP after successful file browser selection', async () => {
     (getLspManager as jest.Mock).mockReturnValue(mockLspManager);
