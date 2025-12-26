@@ -67,14 +67,14 @@ export class EnvManager {
     async promptEnvironmentSelection() {
         try {
             const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || process.cwd();
-            
+
             // Validate the currently selected environment is still available
             if (this.jacPath && !(await validateJacExecutable(this.jacPath))) {
                 this.jacPath = undefined;
                 await this.context.globalState.update('jacEnvPath', undefined);
                 this.updateStatusBar(); // Update status bar to show no env is selected
             }
-            
+
             // Instant environment discovery - no progress dialogs needed!
             const envs = await findPythonEnvsWithJac(workspaceRoot);
 
