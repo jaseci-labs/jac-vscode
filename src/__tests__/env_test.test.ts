@@ -58,8 +58,6 @@ jest.mock('vscode', () => {
       workspaceFolders: [
         { uri: { fsPath: '/mock/workspace' } }
       ],
-      textDocuments: [],
-      onDidOpenTextDocument: jest.fn(),
     },
   };
 });
@@ -225,32 +223,38 @@ describe('EnvManager (Jest)', () => {
   });
 
   /**
-   * TEST 6: No environments found - Moved to showEnvironmentPrompt()
+   * TEST 6: Warning displayed when no environments are found
    *
-   * - showEnvironmentPrompt() displays warning when no environments are detected
-   * - Offers options to install Jac or select manually
+   * Updated behavior:
+   * - Shows non-blocking warning with only 'Install Jac Now'
+   * - STILL shows QuickPick (manual/browse options)
    */
-  test('should show warning in showEnvironmentPrompt when no envs found', async () => {
+  test('should show warning when no envs are found and still show QuickPick', async () => {
+
     (envDetection.findPythonEnvsWithJac as jest.Mock).mockResolvedValue([]);
     (vscode.window.showWarningMessage as jest.Mock).mockResolvedValue(undefined);
+    (vscode.window.showQuickPick as jest.Mock).mockResolvedValue(undefined); // user cancels
 
-    await (envManager as any).showEnvironmentPrompt();
+    await envManager.promptEnvironmentSelection();
 
     expect(vscode.window.showWarningMessage).toHaveBeenCalledWith(
-      'No Jac environments found. Install Jac to enable IntelliSense and language features.',
-      'Install Jac',
-      'Select Manually'
+      'No Jac environments found. You can install Jac, or select a Jac executable manually.',
+      'Install Jac Now'
     );
+
+    expect(vscode.window.showQuickPick).toHaveBeenCalled();
+    expect(context.globalState.update).not.toHaveBeenCalled();
   });
 
   /**
-   * TEST 7: init() with saved environment - loads and validates
+   * TEST 7: Initialization with saved environment path
    *
-   * - Saved environment path is loaded and validated on init
-   * - Status bar is updated to reflect the loaded environment
-   * - No environment prompt is shown when jacPath is already set
+   * - EnvManager correctly loads a previously saved environment path
+   * - Status bar is updated with the saved environment
+   * - No prompting occurs when valid saved environment exists
+   *
    */
-  test('should initialize with saved environment and not show prompt', async () => {
+  test('should initialize with saved environment path', async () => {
 
     context.globalState.get.mockReturnValue('/saved/jac/path');
     (envDetection.validateJacExecutable as jest.Mock).mockResolvedValue(true);
@@ -259,27 +263,23 @@ describe('EnvManager (Jest)', () => {
 
     expect(envDetection.validateJacExecutable).toHaveBeenCalledWith('/saved/jac/path');
     expect((envManager as any).statusBar.text).toContain('Jac');
-    expect(vscode.window.showWarningMessage).not.toHaveBeenCalled();
-    expect(vscode.window.showInformationMessage).not.toHaveBeenCalled();
   });
 
   /**
    * TEST 8: Initialization handles invalid saved environment
    *
    * - Invalid saved environments are detected and cleared
-   * - showEnvironmentPrompt is called after invalid env is cleared
+   * - User is warned about the invalid environment
    */
   test('should handle invalid saved environment during init', async () => {
     context.globalState.get.mockReturnValue('/invalid/jac/path');
     (envDetection.validateJacExecutable as jest.Mock).mockResolvedValue(false);
-    (envDetection.findPythonEnvsWithJac as jest.Mock).mockResolvedValue([]);
     (vscode.window.showWarningMessage as jest.Mock).mockResolvedValue(undefined);
 
     await envManager.init();
 
     expect(context.globalState.update).toHaveBeenCalledWith('jacEnvPath', undefined);
     expect((envManager as any).statusBar.text).toContain('No Env');
-    expect(vscode.window.showWarningMessage).toHaveBeenCalled();
   });
 
   /**
@@ -350,7 +350,7 @@ describe('EnvManager (Jest)', () => {
     (envDetection.validateJacExecutable as jest.Mock).mockResolvedValue(true);
     (vscode.window.showOpenDialog as jest.Mock).mockResolvedValue([
       { fsPath: "/browser/jac" },
-    ]);
+  ]);
 
     await (envManager as any).handleFileBrowser();
 
@@ -380,34 +380,4 @@ describe('EnvManager (Jest)', () => {
     expect(context.globalState.update).toHaveBeenCalledWith("jacEnvPath", "/browser/jac");
     expect(mockLspManager.restart).toHaveBeenCalledTimes(1);
   });
-
-  /**
-   * TEST 14: showEnvironmentPrompt with found environments
-   *
-   * - Shows information message when environments are found
-   * - Offers to select environment
-   * - Triggers promptEnvironmentSelection when user selects
-   */
-  test("showEnvironmentPrompt shows selection prompt when envs found", async () => {
-    (envDetection.findPythonEnvsWithJac as jest.Mock).mockResolvedValue([
-      '/path/to/jac',
-      '/another/path/jac'
-    ]);
-    (vscode.window.showInformationMessage as jest.Mock).mockResolvedValue('Select Environment');
-    (vscode.window.showQuickPick as jest.Mock).mockResolvedValue({
-      env: '/path/to/jac',
-      label: 'Jac (MyEnv)',
-      description: '/path/to/jac',
-    });
-
-    await (envManager as any).showEnvironmentPrompt();
-
-    expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-      'No Jac environment selected. Select one to enable IntelliSense.',
-      'Select Environment'
-    );
-
-    expect(vscode.window.showQuickPick).toHaveBeenCalled();
-  });
-
 });

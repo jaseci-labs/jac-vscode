@@ -24,37 +24,15 @@ export class EnvManager {
         // Always show status bar immediately, even before environment detection
         this.updateStatusBar();
 
-        await this.validateAndClearIfInvalid();  // Validate and clear if invalid
+        // Validate existing path if present
+        await this.validateAndClearIfInvalid();
 
         if (!this.jacPath) {
-            await this.showEnvironmentPrompt(); // Show prompt immediately when extension activates
-        }
-
-        this.updateStatusBar();
-    }
-
-    private async showEnvironmentPrompt() {
-        const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || process.cwd();
-        const envs = await findPythonEnvsWithJac(workspaceRoot);
-
-        // Unified handler - both cases with ternary
-        const isNoEnv = envs.length === 0;
-        const action = isNoEnv
-            ? await vscode.window.showWarningMessage(
-                'No Jac environments found. Install Jac to enable IntelliSense and language features.',
-                'Install Jac',
-                'Select Manually'
-            )
-            : await vscode.window.showInformationMessage(
-                'No Jac environment selected. Select one to enable IntelliSense.',
-                'Select Environment'
-            );
-
-        if (action === 'Install Jac') {
-            vscode.env.openExternal(vscode.Uri.parse('https://www.jac-lang.org/learn/installation/'));
-        } else if (action === 'Select Manually' || action === 'Select Environment') {
             await this.promptEnvironmentSelection();
         }
+
+        // Final status bar update to ensure it's always shown
+        this.updateStatusBar();
     }
 
     getJacPath(): string {
@@ -86,7 +64,6 @@ export class EnvManager {
     async promptEnvironmentSelection() {
         try {
             const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || process.cwd();
-            await this.validateAndClearIfInvalid(); // Validate current environment before showing picker
 
             await this.validateAndClearIfInvalid();// Validate current environment before showing picker
 
@@ -160,6 +137,16 @@ export class EnvManager {
                 });
 
                 quickPickItems.push(...detectedItems);
+            } else {
+                // Show non-blocking warning message when no environments found
+                vscode.window.showWarningMessage(
+                    "No Jac environments found. You can install Jac, or select a Jac executable manually.",
+                    "Install Jac Now"
+                ).then(action => {
+                    if (action === "Install Jac Now") {
+                        vscode.env.openExternal(vscode.Uri.parse('https://www.jac-lang.org/learn/installation/'));
+                    }
+                });
             }
 
             // Show QuickPick
@@ -351,7 +338,7 @@ export class EnvManager {
                 vscode.window.showErrorMessage(`Failed to restart language server: ${error.message || error}`);
             }
         } else {
-            // LSP doesn't exist: create and start it
+            // LSP doesn't exist yet: create and start it
             try {
                 await createAndStartLsp(this, this.context);
             } catch (error: any) {
