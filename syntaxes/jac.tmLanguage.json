@@ -1813,7 +1813,7 @@
 				{
 					"name": "meta.lambda-function.jac",
 					"begin": "(?x)\n  \\b (lambda) \\b",
-					"end": "(:)|(\\n)",
+					"end": "({)|(\\n)",
 					"beginCaptures": {
 						"1": {
 							"name": "storage.type.function.lambda.jac"
@@ -1841,7 +1841,7 @@
 							"include": "#illegal-names"
 						},
 						{
-							"match": "([[:alpha:]_]\\w*)\\s*(?:(,)|(?=:|$))",
+							"match": "([[:alpha:]_]\\w*)\\s*(?:(,)|(?=->|{|$))",
 							"captures": {
 								"1": {
 									"name": "variable.parameter.function.language.jac"
@@ -1855,7 +1855,7 @@
 							"include": "#comments"
 						},
 						{
-							"include": "#illegal-anno"
+							"include": "#return-annotation"
 						},
 						{
 							"include": "#lambda-parameter-with-default"
@@ -1876,11 +1876,11 @@
 		},
 		"lambda-nested-incomplete": {
 			"name": "storage.type.function.lambda.jac",
-			"match": "\\blambda(?=\\s*[:,)])"
+			"match": "\\blambda(?=\\s*[->,{)])"
 		},
 		"lambda-parameter-with-default": {
 			"begin": "(?x)\n  \\b\n  ([[:alpha:]_]\\w*) \\s* (=)\n",
-			"end": "(,)|(?=:|$)",
+			"end": "(,)|(?=->|{|$)",
 			"beginCaptures": {
 				"1": {
 					"name": "variable.parameter.function.language.jac"
@@ -2087,7 +2087,7 @@
 		},
 		"return-annotation": {
 			"begin": "(->)",
-			"end": "(?=:)",
+			"end": "(?=:|{)",
 			"beginCaptures": {
 				"1": {
 					"name": "punctuation.separator.annotation.result.jac"
