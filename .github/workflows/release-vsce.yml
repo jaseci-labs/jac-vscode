@@ -25,7 +25,7 @@ jobs:
 
       - name: Install Dependencies & Package Extension
         run: |
-          npm ci
+          npm install
           vsce package
 
       - name: Publish to VS Code Marketplace
