@@ -6,9 +6,14 @@ import { LspManager } from "./lsp/lsp_manager";
 import { validateJacExecutable } from "./utils/envDetection";
 
 let lspManager: LspManager | undefined;
+let envManager: EnvManager | undefined;
 
 export function getLspManager(): LspManager | undefined {
   return lspManager;
+}
+
+export function getEnvManager(): EnvManager | undefined {
+    return envManager;
 }
 
 // Create and start LSP Manager if not already running
@@ -46,7 +51,11 @@ export async function activate(context: vscode.ExtensionContext) {
         console.error("LSP failed to start during activation:", error);
       }
     }
-    // If Jac not available, silently skip - user can select environment later
+
+    return {
+        getEnvManager: () => envManager,
+        getLspManager: () => lspManager
+    };
   } catch (error) {
     console.error("Extension activation error:", error);
   }

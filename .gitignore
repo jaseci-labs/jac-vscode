@@ -4,3 +4,7 @@ vendor/
 .env
 .vscode/
 .jaccache/
+.jac/cache
+.vscode-test/
+.DS_Store
+package-lock.json
