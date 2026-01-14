@@ -430,48 +430,80 @@
 			}
 		},
 		"jsx-tag-component": {
-			"name": "meta.jsx.component.jac",
-			"begin": "(<)([A-Z][a-zA-Z0-9_$]*)(?=\\s|/?>)",
-			"end": "(/?>)",
-			"beginCaptures": {
-				"1": {
-					"name": "punctuation.definition.tag.begin.jsx.jac"
-				},
-				"2": {
-					"name": "support.class.component.jsx.jac"
-				}
-			},
-			"endCaptures": {
-				"1": {
-					"name": "punctuation.definition.tag.end.jsx.jac"
-				}
-			},
 			"patterns": [
 				{
-					"include": "#jsx-tag-attributes"
+					"comment": "Self-closing component tag",
+					"name": "meta.jsx.component.jac",
+					"match": "(<)([A-Z][a-zA-Z0-9_$]*)([^>]*)(/>)",
+					"captures": {
+						"1": { "name": "punctuation.definition.tag.begin.jsx.jac" },
+						"2": { "name": "support.class.component.jsx.jac" },
+						"3": { "patterns": [{ "include": "#jsx-tag-attributes" }] },
+						"4": { "name": "punctuation.definition.tag.end.jsx.jac" }
+					}
+				},
+				{
+					"comment": "Component tag with children",
+					"name": "meta.jsx.component.jac",
+					"begin": "(<)([A-Z][a-zA-Z0-9_$]*)(?=[\\s>])",
+					"end": "(</)(\\2)(>)",
+					"beginCaptures": {
+						"1": { "name": "punctuation.definition.tag.begin.jsx.jac" },
+						"2": { "name": "support.class.component.jsx.jac" }
+					},
+					"endCaptures": {
+						"1": { "name": "punctuation.definition.tag.begin.jsx.jac" },
+						"2": { "name": "support.class.component.jsx.jac" },
+						"3": { "name": "punctuation.definition.tag.end.jsx.jac" }
+					},
+					"patterns": [
+						{
+							"begin": "(>)",
+							"end": "(?=</[A-Z])",
+							"beginCaptures": { "1": { "name": "punctuation.definition.tag.end.jsx.jac" } },
+							"patterns": [{ "include": "#jsx-children" }]
+						},
+						{ "include": "#jsx-tag-attributes" }
+					]
 				}
 			]
 		},
 		"jsx-tag-html": {
-			"name": "meta.jsx.html.jac",
-			"begin": "(<)([a-z][a-zA-Z0-9_-]*)(?=\\s|/?>)",
-			"end": "(/?>)",
-			"beginCaptures": {
-				"1": {
-					"name": "punctuation.definition.tag.begin.jsx.jac"
-				},
-				"2": {
-					"name": "entity.name.tag.html.jsx.jac"
-				}
-			},
-			"endCaptures": {
-				"1": {
-					"name": "punctuation.definition.tag.end.jsx.jac"
-				}
-			},
 			"patterns": [
 				{
-					"include": "#jsx-tag-attributes"
+					"comment": "Self-closing HTML tag",
+					"name": "meta.jsx.html.jac",
+					"match": "(<)([a-z][a-zA-Z0-9_-]*)([^>]*)(/>)",
+					"captures": {
+						"1": { "name": "punctuation.definition.tag.begin.jsx.jac" },
+						"2": { "name": "entity.name.tag.html.jsx.jac" },
+						"3": { "patterns": [{ "include": "#jsx-tag-attributes" }] },
+						"4": { "name": "punctuation.definition.tag.end.jsx.jac" }
+					}
+				},
+				{
+					"comment": "HTML tag with children",
+					"name": "meta.jsx.html.jac",
+					"begin": "(<)([a-z][a-zA-Z0-9_-]*)(?=[\\s>])",
+					"end": "(</)(\\2)(>)",
+					"beginCaptures": {
+						"1": { "name": "punctuation.definition.tag.begin.jsx.jac" },
+						"2": { "name": "entity.name.tag.html.jsx.jac" }
+					},
+					"endCaptures": {
+						"1": { "name": "punctuation.definition.tag.begin.jsx.jac" },
+						"2": { "name": "entity.name.tag.html.jsx.jac" },
+						"3": { "name": "punctuation.definition.tag.end.jsx.jac" }
+					},
+					"patterns": [
+						{
+							"begin": "(>)",
+							"end": "(?=</[a-z])",
+							"beginCaptures": { "1": { "name": "punctuation.definition.tag.end.jsx.jac" } },
+							"patterns": [{ "include": "#jsx-children" }]
+						},
+						{ "include": "#jsx-tag-attributes" }
+					]
 				}
 			]
 		},

@@ -211,4 +211,77 @@ describe('inspectTokenScopesHandler - Location Based Tests', () => {
             expectToken(result, 38, 12, 23, 'Hello, Jac!', ['string.quoted.single.jac']);
         });
     });
+
+    describe('Lambda Arrow Syntax (line 64)', () => {
+        test('lambda keyword', () => {
+            // useEffect(lambda   -> None{ ... }
+            expectToken(result, 64, 19, 25, 'lambda', ['storage.type.function.lambda.jac']);
+        });
+
+        test('lambda arrow operator', () => {
+            expectToken(result, 64, 28, 30, '->', ['punctuation.separator.annotation.result.jac']);
+        });
+
+        test('lambda None return type', () => {
+            expectToken(result, 64, 31, 35, 'None', ['constant.language.jac']);
+        });
+
+        test('lambda opening brace', () => {
+            expectToken(result, 64, 35, 36, '{', ['punctuation.section.function.lambda.begin.jac']);
+        });
+    });
+
+    describe('JSX Text Content (line 65)', () => {
+        test('h1 tag name', () => {
+            // <h1>Count is {count}</h1>
+            expectToken(result, 65, 17, 19, 'h1', ['entity.name.tag.html.jsx.jac']);
+        });
+
+        test('JSX text "Count is " as string', () => {
+            expectToken(result, 65, 20, 29, 'Count is ', ['string.unquoted.jsx.jac']);
+        });
+
+        test('JSX embedded expression brace', () => {
+            expectToken(result, 65, 29, 30, '{', ['punctuation.section.embedded.begin.jsx.jac']);
+        });
+    });
+
+    describe('JSX with test keyword (line 72)', () => {
+        test('h2 opening tag', () => {
+            // <h2>This is a test component</h2>
+            expectToken(result, 72, 14, 16, 'h2', ['entity.name.tag.html.jsx.jac']);
+        });
+
+        test('JSX text with "test" as string not keyword', () => {
+            expectToken(result, 72, 17, 41, 'This is a test component', ['string.unquoted.jsx.jac']);
+        });
+
+        test('h2 closing tag name', () => {
+            expectToken(result, 72, 43, 45, 'h2', ['entity.name.tag.html.jsx.jac']);
+        });
+
+        test('div closing tag (line 74)', () => {
+            // </div>
+            expectToken(result, 74, 11, 14, 'div', ['entity.name.tag.html.jsx.jac']);
+        });
+    });
+
+    describe('Function with pub modifier (line 70)', () => {
+        test('def keyword', () => {
+            // def:pub TestComponent() -> any {
+            expectToken(result, 70, 5, 8, 'def', ['storage.type.function.jac']);
+        });
+
+        test('pub modifier', () => {
+            expectToken(result, 70, 9, 12, 'pub', ['storage.modifier.declaration.jac']);
+        });
+
+        test('function name TestComponent', () => {
+            expectToken(result, 70, 13, 26, 'TestComponent', ['entity.name.function.jac']);
+        });
+
+        test('return type any', () => {
+            expectToken(result, 70, 32, 35, 'any', ['support.type.jac']);
+        });
+    });
 });

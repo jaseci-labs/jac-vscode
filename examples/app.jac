@@ -56,3 +56,21 @@ cl {
         </div>;
     }
 }
+
+
+cl {
+    def app()  -> any {
+        has count: int = 0;
+        useEffect(lambda   -> None{ console.log("Count: ", count);} , [count]);
+        return <h1>Count is {count}</h1>;
+    }
+}
+
+cl{
+    def:pub TestComponent() -> any {
+        return <div>
+            <h2>This is a test component</h2>
+            <p>It demonstrates component creation in Jac.</p>
+        </div>;
+    }
+}
