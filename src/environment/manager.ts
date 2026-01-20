@@ -27,7 +27,8 @@ export class EnvManager {
         await this.validateAndClearIfInvalid();  // Validate and clear if invalid
 
         if (!this.jacPath) {
-            await this.showEnvironmentPrompt(); // Show prompt immediately when extension activates
+            // Don't await - let it run in background so status bar is immediately clickable
+            this.showEnvironmentPrompt();
         }
 
         this.updateStatusBar();
@@ -120,7 +121,7 @@ export class EnvManager {
 
                 const detectedItems = envs.map(env => {
                     const isGlobal = env === 'jac' || env === 'jac.exe' ||
-                        pathPartsFromEnv.some(dir =>path.join(dir, path.basename(env)) === env);
+                        pathPartsFromEnv.some(dir => path.join(dir, path.basename(env)) === env);
 
                     let displayName = '';
 
@@ -330,8 +331,8 @@ export class EnvManager {
     updateStatusBar() {
         if (this.jacPath) {
             const isGlobal = this.jacPath === 'jac' || this.jacPath === 'jac.exe' ||
-                           (process.env.PATH?.split(path.delimiter) || []).some(dir =>
-                               path.join(dir, path.basename(this.jacPath!)) === this.jacPath);
+                (process.env.PATH?.split(path.delimiter) || []).some(dir =>
+                    path.join(dir, path.basename(this.jacPath!)) === this.jacPath);
 
             const label = isGlobal ? 'Jac (Global)' : 'Jac';
             this.statusBar.text = `$(check) ${label}`;
