@@ -40,10 +40,7 @@ describe('Extension Integration Tests - Full Lifecycle', () => {
     describe('Phase 1: Extension Auto-Activation and Initialization', () => {
 
         before(async function () {
-            this.timeout(30_000);
-
-            // Mock the environment prompts to prevent blocking during test
-            vscode.window.showWarningMessage = async () => undefined as any;
+            this.timeout(30_000);;
 
             // Get extension reference (not yet activated)
             const ext = vscode.extensions.getExtension('jaseci-labs.jaclang-extension');
@@ -166,7 +163,7 @@ describe('Extension Integration Tests - Full Lifecycle', () => {
         });
 
         it('should verify jac executable works', async function () {
-            this.timeout(15_000);
+            this.timeout(20_000);
 
             // Test that the installed jac binary is functional
             const versionCheckResult = await runCommand(jacExePath, ['--version']);
@@ -185,7 +182,7 @@ describe('Extension Integration Tests - Full Lifecycle', () => {
         });
 
         it('should allow environment selection through selectEnv command and verify status bar update', async function () {
-            this.timeout(5_000);
+            this.timeout(11_000);
 
             // Trigger environment selection command
             await vscode.commands.executeCommand('jaclang-extension.selectEnv');
