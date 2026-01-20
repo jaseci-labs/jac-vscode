@@ -232,3 +232,4 @@ jobs:
 
       - name: Run Integration Tests
         run: xvfb-run -a npm run test:integration
+        
