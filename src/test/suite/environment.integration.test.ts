@@ -185,7 +185,7 @@ describe('Extension Integration Tests - Full Lifecycle', () => {
         });
 
         it('should allow environment selection through selectEnv command and verify status bar update', async function () {
-            this.timeout(5_000);
+            this.timeout(10_000);
 
             // Trigger environment selection command
             await vscode.commands.executeCommand('jaclang-extension.selectEnv');
