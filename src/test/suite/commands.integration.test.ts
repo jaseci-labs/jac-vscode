@@ -22,8 +22,6 @@ describe('Commands Integration Tests - RUN_FILE and Fallback Mechanisms', () => 
     let venvPythonPath = '';
     let jacExePath = '';
     let envManager: any;
-    let originalPath = process.env.PATH ?? '';
-    let pipxBinDir = '';
 
     before(async function () {
         this.timeout(30_000);
