@@ -74,3 +74,12 @@ cl{
         </div>;
     }
 }
+
+cl {
+    def app() -> any {
+        return (
+            <EmailBuddyLayout
+            />
+        );
+    }
+}

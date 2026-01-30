@@ -284,4 +284,22 @@ describe('inspectTokenScopesHandler - Location Based Tests', () => {
             expectToken(result, 70, 32, 35, 'any', ['support.type.jac']);
         });
     });
+
+    describe('Multi-line Self-closing Tag', () => {
+        test('Multi-line component tag name', () => {
+            // <EmailBuddyLayout
+            // />
+            // app.jac line 81 (approximate, based on append)
+            // We need to find the line number dynamically or assume it's at the end.
+            // Since we appended to app.jac, looking at the previous read, it ended at line 76.
+            // So the new content starts around line 79/80.
+            // line 81: <EmailBuddyLayout
+            expectToken(result, 81, 14, 30, 'EmailBuddyLayout', ['support.class.component.jsx.jac']);
+        });
+
+        test('Multi-line component closing />', () => {
+            // line 82: />
+            expectToken(result, 82, 13, 15, '/>', ['punctuation.definition.tag.end.jsx.jac']);
+        });
+    });
 });
