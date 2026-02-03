@@ -88,3 +88,26 @@ sem word.cost = "it is a expense";
 
 impl semantic{}
 
+cl {
+    def:pub app() -> any {
+        has count: int = 0;
+
+        return <div>
+            # No parameters
+            <button onClick={lambda -> None { count = count + 1; }}>
+                Increment
+            </button>
+
+            # With event parameter
+            <input onChange={lambda e: any -> None { console.log(e.target.value); }} />
+        </div>;
+    }
+}
+
+with entry{
+    process = lambda x: int -> int {
+    doubled = x * 2;
+    result = doubled + 1;
+    return result;
+};
+}

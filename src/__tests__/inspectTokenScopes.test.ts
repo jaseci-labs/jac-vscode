@@ -131,6 +131,15 @@ describe('inspectTokenScopesHandler - Location Based Tests', () => {
             // <button onClick={...}>
             expectToken(result, 8, 14, 20, 'button', ['entity.name.tag.html.jsx.jac']);
         });
+        test('div closing tag punctuation', () => {
+            // </div> - closing tag should have same punctuation color as opening
+            expectToken(result, 13, 9, 11, '</', ['source.jac', 'meta.jsx.html.jac', 'punctuation.definition.tag.end.jsx.jac']);
+        });
+
+        test('div closing tag name', () => {
+            // </div>
+            expectToken(result, 13, 11, 14, 'div', ['source.jac', 'meta.jsx.html.jac', 'entity.name.tag.html.jsx.jac']);
+        });    
     });
 
     describe('JSX Component Tags (PascalCase)', () => {
