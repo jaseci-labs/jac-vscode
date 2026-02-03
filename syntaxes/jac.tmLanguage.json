@@ -460,6 +460,7 @@
 		},
 		"jsx-tag-html": {
 			"patterns": [
+				
 				{
 					"comment": "HTML tag (self-closing or with children)",
 					"name": "meta.jsx.html.jac",
