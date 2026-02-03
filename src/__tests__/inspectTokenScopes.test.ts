@@ -87,6 +87,21 @@ describe('inspectTokenScopesHandler - Location Based Tests', () => {
             // with entry{
             expectToken(result, 37, 6, 11, 'entry', ['source.jac', 'keyword.control.flow.jac']);
         });
+
+        test('impl keyword', () => {
+            // impl _static_bash{}
+            expectToken(result, 85, 1, 5, 'impl', ['source.jac', 'meta.class.jac', 'storage.type.class.jac']);
+        });
+
+        test('impl function name', () => {
+            // impl _static_bash{} - function name should be yellow (entity.name.function)
+            expectToken(result, 85, 6, 18, '_static_bash', ['source.jac', 'meta.class.jac', 'entity.name.function.jac']);
+        });
+
+        test('impl semantic - semantic as identifier', () => {
+            // impl semantic{} - semantic should be yellow (treated as function name, not keyword)
+            expectToken(result, 89, 6, 14, 'semantic', ['source.jac', 'meta.class.jac', 'entity.name.function.jac']);
+        });
     });
 
     describe('Builtin Functions', () => {

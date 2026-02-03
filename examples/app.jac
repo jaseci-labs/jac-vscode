@@ -80,3 +80,11 @@ def app{
             <EmailBuddyLayout />
     );
 }
+
+def _static_bash(commands: list, exe: str) -> str;
+impl _static_bash{}
+
+sem word.cost = "it is a expense";
+
+impl semantic{}
+

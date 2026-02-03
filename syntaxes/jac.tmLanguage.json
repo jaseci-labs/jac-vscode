@@ -179,8 +179,8 @@
 			"patterns": [
 				{
 					"name": "meta.class.jac",
-					  "begin": "(impl|sem)",
-					"end": "(?=:|{|\\W)",
+					  "begin": "\\b(impl|sem)\\b",
+					"end": "(?=:|{)",
 					"beginCaptures": {
 						"1": {
 							"name": "storage.type.class.jac"
@@ -196,7 +196,7 @@
 							"include": "#comments"
 						},
 						{
-							"name": "entity.name.type.class.jac",
+							"name": "entity.name.function.jac",
 							"match": "\\b([[:alpha:]_]\\w*)\\b"
 						}
 					]
@@ -437,53 +437,96 @@
 					"begin": "(<)([A-Z][a-zA-Z0-9_$]*)(?=[\\s/>])",
 					"end": "(/>)|(</)(\\2)(>)",
 					"beginCaptures": {
-						"1": { "name": "punctuation.definition.tag.begin.jsx.jac" },
-						"2": { "name": "support.class.component.jsx.jac" }
+						"1": {
+							"name": "punctuation.definition.tag.begin.jsx.jac"
+						},
+						"2": {
+							"name": "support.class.component.jsx.jac"
+						}
 					},
 					"endCaptures": {
-						"1": { "name": "punctuation.definition.tag.end.jsx.jac" },
-						"2": { "name": "punctuation.definition.tag.begin.jsx.jac" },
-						"3": { "name": "support.class.component.jsx.jac" },
-						"4": { "name": "punctuation.definition.tag.end.jsx.jac" }
+						"1": {
+							"name": "punctuation.definition.tag.end.jsx.jac"
+						},
+						"2": {
+							"name": "punctuation.definition.tag.begin.jsx.jac"
+						},
+						"3": {
+							"name": "support.class.component.jsx.jac"
+						},
+						"4": {
+							"name": "punctuation.definition.tag.end.jsx.jac"
+						}
 					},
 					"patterns": [
 						{
 							"begin": "(>)",
 							"end": "(?=</)",
-							"beginCaptures": { "1": { "name": "punctuation.definition.tag.end.jsx.jac" } },
-							"patterns": [{ "include": "#jsx-children" }]
+							"beginCaptures": {
+								"1": {
+									"name": "punctuation.definition.tag.end.jsx.jac"
+								}
+							},
+							"patterns": [
+								{
+									"include": "#jsx-children"
+								}
+							]
 						},
-						{ "include": "#jsx-tag-attributes" }
+						{
+							"include": "#jsx-tag-attributes"
+						}
 					]
 				}
 			]
 		},
 		"jsx-tag-html": {
 			"patterns": [
-
 				{
 					"comment": "HTML tag (self-closing or with children)",
 					"name": "meta.jsx.html.jac",
 					"begin": "(<)([a-z][a-zA-Z0-9_-]*)(?=[\\s/>])",
 					"end": "(/>)|(</)(\\2)(>)",
 					"beginCaptures": {
-						"1": { "name": "punctuation.definition.tag.begin.jsx.jac" },
-						"2": { "name": "entity.name.tag.html.jsx.jac" }
+						"1": {
+							"name": "punctuation.definition.tag.begin.jsx.jac"
+						},
+						"2": {
+							"name": "entity.name.tag.html.jsx.jac"
+						}
 					},
 					"endCaptures": {
-						"1": { "name": "punctuation.definition.tag.end.jsx.jac" },
-						"2": { "name": "punctuation.definition.tag.begin.jsx.jac" },
-						"3": { "name": "entity.name.tag.html.jsx.jac" },
-						"4": { "name": "punctuation.definition.tag.end.jsx.jac" }
+						"1": {
+							"name": "punctuation.definition.tag.end.jsx.jac"
+						},
+						"2": {
+							"name": "punctuation.definition.tag.begin.jsx.jac"
+						},
+						"3": {
+							"name": "entity.name.tag.html.jsx.jac"
+						},
+						"4": {
+							"name": "punctuation.definition.tag.end.jsx.jac"
+						}
 					},
 					"patterns": [
 						{
 							"begin": "(>)",
 							"end": "(?=</)",
-							"beginCaptures": { "1": { "name": "punctuation.definition.tag.end.jsx.jac" } },
-							"patterns": [{ "include": "#jsx-children" }]
+							"beginCaptures": {
+								"1": {
+									"name": "punctuation.definition.tag.end.jsx.jac"
+								}
+							},
+							"patterns": [
+								{
+									"include": "#jsx-children"
+								}
+							]
 						},
-						{ "include": "#jsx-tag-attributes" }
+						{
+							"include": "#jsx-tag-attributes"
+						}
 					]
 				}
 			]
@@ -1665,7 +1708,7 @@
 			"patterns": [
 				{
 					"name": "meta.class.jac",
-					  "begin": "(impl|sem)\\s*(?=\\s*[[:alpha:]_]\\w*|\\s*( |:|\\n))",
+					  "begin": "\\b(impl|sem)\\b\\s*(?=\\s*[[:alpha:]_]\\w*|\\s*( |:|\\n))",
 					"end": "((?=:| )|;)",
 					"beginCaptures": {
 						"1": {
