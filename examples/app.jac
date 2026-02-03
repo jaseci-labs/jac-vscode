@@ -74,3 +74,9 @@ cl{
         </div>;
     }
 }
+
+def app{
+    return (
+            <EmailBuddyLayout />
+    );
+}

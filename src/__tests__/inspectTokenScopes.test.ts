@@ -128,6 +128,21 @@ describe('inspectTokenScopesHandler - Location Based Tests', () => {
             // <NavLink to="/about">
             expectToken(result, 12, 14, 21, 'NavLink', ['support.class.component.jsx.jac']);
         });
+
+        test('EmailBuddyLayout multi-line self-closing tag', () => {
+            // <EmailBuddyLayout />
+            expectToken(result, 80, 14, 30, 'EmailBuddyLayout', ['support.class.component.jsx.jac']);
+        });
+
+        test('EmailBuddyLayout self-closing tag end - multi-line', () => {
+            // /> on line 80
+            expectToken(result, 80, 31, 33, '/>', ['punctuation.definition.tag.end.jsx.jac']);
+        });
+
+        test('Closing parenthesis after multi-line JSX component', () => {
+            // ); - ensure scope is not inherited from JSX
+            expectToken(result, 81, 1, 8, '    );', ['source.jac']);
+        });
     });
 
     describe('JSX Attributes', () => {
