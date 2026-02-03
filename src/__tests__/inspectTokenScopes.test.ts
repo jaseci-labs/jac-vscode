@@ -139,7 +139,7 @@ describe('inspectTokenScopesHandler - Location Based Tests', () => {
         test('div closing tag name', () => {
             // </div>
             expectToken(result, 13, 11, 14, 'div', ['source.jac', 'meta.jsx.html.jac', 'entity.name.tag.html.jsx.jac']);
-        });    
+        });
     });
 
     describe('JSX Component Tags (PascalCase)', () => {
