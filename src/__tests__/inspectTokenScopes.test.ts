@@ -712,4 +712,21 @@ describe('inspectTokenScopesHandler - Location Based Tests', () => {
             expectToken(result, 131, 31, 35, 'time', ['source.jac', 'meta.function-call.jac', 'meta.function-call.generic.jac']);
         });
     });
+
+    describe('Error recovery: incomplete sem followed by impl (lines 135-136)', () => {
+        test('sem keyword in incomplete statement', () => {
+            // sem word.cost =
+            expectToken(result, 135, 1, 4, 'sem', ['source.jac', 'meta.semstring.jac', 'storage.type.semstring.jac']);
+        });
+
+        test('impl keyword after incomplete sem recovers correctly', () => {
+            // impl semantic{}
+            expectToken(result, 136, 1, 5, 'impl', ['source.jac', 'meta.class.jac', 'storage.type.class.jac']);
+        });
+
+        test('semantic function name after impl', () => {
+            // impl semantic{}
+            expectToken(result, 136, 6, 14, 'semantic', ['source.jac', 'meta.class.jac', 'entity.name.function.jac']);
+        });
+    });
 });

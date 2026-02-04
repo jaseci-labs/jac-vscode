@@ -110,7 +110,7 @@
 				{
 					"name": "meta.semstring.jac",
 					"begin": "(?x)\\b(sem)\\b(?=\\s*[[:alpha:]_]\\w*|\\s*\\n)",
-					"end": ";",
+					"end": ";|(?=^\\s*(?:cl|def|impl|with|sem|import|glob|let|enum|obj|class|node|edge|walker|test)\\b)",
 					"beginCaptures": {
 						"1": {
 							"name": "storage.type.semstring.jac"

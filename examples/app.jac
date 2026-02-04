@@ -131,3 +131,6 @@ impl PendingAnalysis.postinit -> None {
         self.timestamp = time.time();
     }
 }
+
+sem word.cost =
+impl semantic{}
