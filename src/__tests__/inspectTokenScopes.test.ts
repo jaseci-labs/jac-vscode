@@ -313,6 +313,12 @@ describe('inspectTokenScopesHandler - Location Based Tests', () => {
             // />
             expectToken(result, 81, 13, 15, '/>', ['source.jac', 'meta.jsx.component.jac', 'punctuation.definition.tag.end.jsx.jac']);
         });
+
+        test('closing parenthesis and semicolon after JSX', () => {
+            // ); - ensure scope exits JSX context
+            expectToken(result, 82, 1, 8, '    );', ['source.jac']);
+        });
+    
     });
 
     describe('Function declaration with parameters (line 85)', () => {
