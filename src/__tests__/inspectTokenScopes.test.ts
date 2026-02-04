@@ -128,7 +128,6 @@ describe('inspectTokenScopesHandler - Location Based Tests', () => {
             // <NavLink to="/about">
             expectToken(result, 12, 14, 21, 'NavLink', ['support.class.component.jsx.jac']);
         });
-
     });
 
     describe('JSX Attributes', () => {
