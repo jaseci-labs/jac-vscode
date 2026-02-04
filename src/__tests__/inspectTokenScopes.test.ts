@@ -318,7 +318,7 @@ describe('inspectTokenScopesHandler - Location Based Tests', () => {
             // ); - ensure scope exits JSX context
             expectToken(result, 82, 1, 8, '    );', ['source.jac']);
         });
-    
+
     });
 
     describe('Function declaration with parameters (line 85)', () => {
