@@ -642,6 +642,9 @@
 		"jsx-children": {
 			"patterns": [
 				{
+					"include": "#comments"
+				},
+				{
 					"include": "#jsx-tag-fragment"
 				},
 				{
@@ -660,16 +663,13 @@
 					"include": "#jsx-evaluated-code"
 				},
 				{
-					"include": "#comments"
-				},
-				{
 					"include": "#jsx-text"
 				}
 			]
 		},
 		"jsx-text": {
 			"name": "string.unquoted.jsx.jac",
-			"match": "[^<>{}\n]+"
+			"match": "[^<>{}\n#]+"
 		},
 		"comments": {
 			"patterns": [

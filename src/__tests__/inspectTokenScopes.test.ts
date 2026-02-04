@@ -465,11 +465,9 @@ describe('inspectTokenScopesHandler - Location Based Tests', () => {
             expectToken(result, 96, 17, 20, 'div', ['source.jac', 'meta.jsx.html.jac', 'entity.name.tag.html.jsx.jac']);
         });
 
-        test('JSX comment text as string', () => {
-            // # No parameters - treated as string in JSX
-            const token = getTokenByLocation(result, 97, 1, 28);
-            expect(token).toBeDefined();
-            expect(token!.scopes).toContain('string.unquoted.jsx.jac');
+        test('JSX comment punctuation (#)', () => {
+            // # No parameters - should be treated as a comment in JSX
+            expectToken(result, 97, 13, 14, '#', ['source.jac', 'comment.line.number-sign.jac']);
         });
 
         test('button tag in nested JSX', () => {
