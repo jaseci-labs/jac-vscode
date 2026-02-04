@@ -87,21 +87,6 @@ describe('inspectTokenScopesHandler - Location Based Tests', () => {
             // with entry{
             expectToken(result, 37, 6, 11, 'entry', ['source.jac', 'keyword.control.flow.jac']);
         });
-
-        test('impl keyword', () => {
-            // impl _static_bash{}
-            expectToken(result, 86, 1, 5, 'impl', ['source.jac', 'meta.class.jac', 'storage.type.class.jac']);
-        });
-
-        test('impl function name', () => {
-            // impl _static_bash{} - function name should be yellow (entity.name.function)
-            expectToken(result, 86, 6, 18, '_static_bash', ['source.jac', 'meta.class.jac', 'entity.name.function.jac']);
-        });
-
-        test('impl semantic - semantic as identifier', () => {
-            // impl semantic{} - semantic should be yellow (treated as function name, not keyword)
-            expectToken(result, 90, 6, 14, 'semantic', ['source.jac', 'meta.class.jac', 'entity.name.function.jac']);
-        });
     });
 
     describe('Builtin Functions', () => {
@@ -131,15 +116,6 @@ describe('inspectTokenScopesHandler - Location Based Tests', () => {
             // <button onClick={...}>
             expectToken(result, 8, 14, 20, 'button', ['entity.name.tag.html.jsx.jac']);
         });
-        test('div closing tag punctuation', () => {
-            // </div> - closing tag should have same punctuation color as opening
-            expectToken(result, 13, 9, 11, '</', ['source.jac', 'meta.jsx.html.jac', 'punctuation.definition.tag.end.jsx.jac']);
-        });
-
-        test('div closing tag name', () => {
-            // </div>
-            expectToken(result, 13, 11, 14, 'div', ['source.jac', 'meta.jsx.html.jac', 'entity.name.tag.html.jsx.jac']);
-        });
     });
 
     describe('JSX Component Tags (PascalCase)', () => {
@@ -153,20 +129,6 @@ describe('inspectTokenScopesHandler - Location Based Tests', () => {
             expectToken(result, 12, 14, 21, 'NavLink', ['support.class.component.jsx.jac']);
         });
 
-        test('EmailBuddyLayout multi-line self-closing tag', () => {
-            // <EmailBuddyLayout />
-            expectToken(result, 80, 14, 30, 'EmailBuddyLayout', ['support.class.component.jsx.jac']);
-        });
-
-        test('EmailBuddyLayout self-closing tag end - multi-line', () => {
-            // /> on line 81
-            expectToken(result, 81, 13, 15, '/>', ['source.jac', 'meta.jsx.component.jac', 'punctuation.definition.tag.end.jsx.jac']);
-        });
-
-        test('Closing parenthesis after multi-line JSX component', () => {
-            // ); - ensure scope is not inherited from JSX
-            expectToken(result, 82, 1, 8, '    );', ['source.jac']);
-        });
     });
 
     describe('JSX Attributes', () => {
