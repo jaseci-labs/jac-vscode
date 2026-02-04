@@ -77,7 +77,8 @@ cl{
 
 def app{
     return (
-            <EmailBuddyLayout />
+            <EmailBuddyLayout 
+            />
     );
 }
 
