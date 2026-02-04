@@ -1,9 +1,7 @@
 {
 	"name": "The Jac Programming Language",
 	"scopeName": "source.jac",
-	"fileTypes": [
-		"jac"
-	],
+	"fileTypes": ["jac"],
 	"patterns": [
 		{
 			"include": "#elements"
@@ -209,7 +207,7 @@
 			"patterns": [
 				{
 					"name": "meta.function.jac",
-					"begin": "(?x)\\b(can|with|def|impl|sem)\\b(?=\\s*[[:alpha:]_]\\w*|\\s*({|;|\\(||\\n))",
+					  "begin": "(?x)\\b(can|with|def|impl|sem)\\b(?=\\s*[[:alpha:]_]\\w*|\\s*({|;|\\(||\\n))",
 					"end": "(?=\\)|{)|;",
 					"beginCaptures": {
 						"1": {
@@ -438,42 +436,22 @@
 					"name": "meta.jsx.component.jac",
 					"begin": "(<)([A-Z][a-zA-Z0-9_$]*)(?=[\\s/>])",
 					"end": "(/>)|(</)(\\2)(>)",
-					"beginCaptures": {
-						"1": {
-							"name": "punctuation.definition.tag.begin.jsx.jac"
-						},
-						"2": {
-							"name": "support.class.component.jsx.jac"
-						}
+					"beginCaptures": { 
+						"1": { "name": "punctuation.definition.tag.begin.jsx.jac" },
+						"2": { "name": "support.class.component.jsx.jac" }
 					},
 					"endCaptures": {
-						"1": {
-							"name": "punctuation.definition.tag.end.jsx.jac"
-						},
-						"2": {
-							"name": "punctuation.definition.tag.end.jsx.jac"
-						},
-						"3": {
-							"name": "support.class.component.jsx.jac"
-						},
-						"4": {
-							"name": "punctuation.definition.tag.end.jsx.jac"
-						}
+						"1": { "name": "punctuation.definition.tag.end.jsx.jac" },
+						"2": { "name": "punctuation.definition.tag.end.jsx.jac" },
+						"3": { "name": "support.class.component.jsx.jac" },
+						"4": { "name": "punctuation.definition.tag.end.jsx.jac" }
 					},
 					"patterns": [
 						{
 							"begin": "(>)",
 							"end": "(?=</)",
-							"beginCaptures": {
-								"1": {
-									"name": "punctuation.definition.tag.end.jsx.jac"
-								}
-							},
-							"patterns": [
-								{
-									"include": "#jsx-children"
-								}
-							]
+							"beginCaptures": { "1": { "name": "punctuation.definition.tag.end.jsx.jac" } },
+							"patterns": [{ "include": "#jsx-children" }]
 						},
 						{
 							"include": "#jsx-tag-attributes"
@@ -490,41 +468,23 @@
 					"begin": "(<)([a-z][a-zA-Z0-9_-]*)(?=[\\s/>])",
 					"end": "(/>)|(</)(\\2)(>)",
 					"beginCaptures": {
-						"1": {
-							"name": "punctuation.definition.tag.begin.jsx.jac"
-						},
-						"2": {
-							"name": "entity.name.tag.html.jsx.jac"
-						}
+						"1": { "name": "punctuation.definition.tag.begin.jsx.jac"},
+						"2": { "name": "entity.name.tag.html.jsx.jac" }
 					},
 					"endCaptures": {
-						"1": {
-							"name": "punctuation.definition.tag.end.jsx.jac"
-						},
-						"2": {
-							"name": "punctuation.definition.tag.end.jsx.jac"
-						},
-						"3": {
-							"name": "entity.name.tag.html.jsx.jac"
-						},
-						"4": {
-							"name": "punctuation.definition.tag.end.jsx.jac"
-						}
+						"1": { "name": "punctuation.definition.tag.end.jsx.jac" },
+						"2": { "name": "punctuation.definition.tag.end.jsx.jac" },
+						"3": { "name": "entity.name.tag.html.jsx.jac" },
+						"4": { "name": "punctuation.definition.tag.end.jsx.jac" }
 					},
 					"patterns": [
 						{
 							"begin": "(>)",
 							"end": "(?=</)",
 							"beginCaptures": {
-								"1": {
-									"name": "punctuation.definition.tag.end.jsx.jac"
-								}
+								"1": { "name": "punctuation.definition.tag.end.jsx.jac" }
 							},
-							"patterns": [
-								{
-									"include": "#jsx-children"
-								}
-							]
+							"patterns": [{ "include": "#jsx-children" }]
 						},
 						{
 							"include": "#jsx-tag-attributes"
