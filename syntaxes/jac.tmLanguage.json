@@ -453,9 +453,7 @@
 							"beginCaptures": { "1": { "name": "punctuation.definition.tag.end.jsx.jac" } },
 							"patterns": [{ "include": "#jsx-children" }]
 						},
-						{
-							"include": "#jsx-tag-attributes"
-						}
+						{ "include": "#jsx-tag-attributes" }
 					]
 				}
 			]
@@ -468,7 +466,7 @@
 					"begin": "(<)([a-z][a-zA-Z0-9_-]*)(?=[\\s/>])",
 					"end": "(/>)|(</)(\\2)(>)",
 					"beginCaptures": {
-						"1": { "name": "punctuation.definition.tag.begin.jsx.jac"},
+						"1": { "name": "punctuation.definition.tag.begin.jsx.jac" },
 						"2": { "name": "entity.name.tag.html.jsx.jac" }
 					},
 					"endCaptures": {
@@ -481,14 +479,10 @@
 						{
 							"begin": "(>)",
 							"end": "(?=</)",
-							"beginCaptures": {
-								"1": { "name": "punctuation.definition.tag.end.jsx.jac" }
-							},
+							"beginCaptures": { "1": { "name": "punctuation.definition.tag.end.jsx.jac" } },
 							"patterns": [{ "include": "#jsx-children" }]
 						},
-						{
-							"include": "#jsx-tag-attributes"
-						}
+						{ "include": "#jsx-tag-attributes" }
 					]
 				}
 			]
