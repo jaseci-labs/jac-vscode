@@ -729,4 +729,10 @@ describe('inspectTokenScopesHandler - Location Based Tests', () => {
             expectToken(result, 136, 6, 14, 'semantic', ['source.jac', 'meta.class.jac', 'entity.name.function.jac']);
         });
     });
+
+    describe('check is no longer a keyword', () => {
+        test('check used as identifier', () => {
+            expectToken(result, 138, 1, 7, 'check', ['source.jac']);
+        });
+    });
 });

@@ -134,3 +134,5 @@ impl PendingAnalysis.postinit -> None {
 
 sem word.cost =
 impl semantic{}
+
+check
