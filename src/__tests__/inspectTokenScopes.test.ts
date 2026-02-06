@@ -735,4 +735,53 @@ describe('inspectTokenScopesHandler - Location Based Tests', () => {
             expectToken(result, 138, 1, 7, 'check', ['source.jac']);
         });
     });
+
+    describe('Builtin string methods (lines 140-148)', () => {
+        test('def keyword for process_text', () => {
+            // def process_text(text: str) -> str {
+            expectToken(result, 140, 1, 4, 'def', ['source.jac', 'meta.function.jac', 'storage.type.function.jac']);
+        });
+
+        test('process_text function name', () => {
+            expectToken(result, 140, 5, 17, 'process_text', ['source.jac', 'meta.function.jac', 'entity.name.function.jac']);
+        });
+
+        test('str return type', () => {
+            expectToken(result, 140, 24, 27, 'str', ['source.jac', 'meta.function.jac', 'support.type.jac']);
+        });
+
+        test('strip() builtin method', () => {
+            // trimmed = text.strip();
+            expectToken(result, 141, 20, 25, 'strip', ['source.jac', 'support.function.builtin.jac']);
+        });
+
+        test('lower() builtin method', () => {
+            // lower = trimmed.lower();
+            expectToken(result, 142, 21, 26, 'lower', ['source.jac', 'support.function.builtin.jac']);
+        });
+
+        test('upper() builtin method', () => {
+            // upper = trimmed.upper();
+            expectToken(result, 143, 21, 26, 'upper', ['source.jac', 'support.function.builtin.jac']);
+        });
+
+        test('endswith() builtin method', () => {
+            // if text.endswith("test") {
+            expectToken(result, 144, 13, 21, 'endswith', ['source.jac', 'support.function.builtin.jac']);
+        });
+
+        test('string literal "test" in endswith call', () => {
+            expectToken(result, 144, 23, 27, 'test', ['source.jac', 'string.quoted.single.jac']);
+        });
+
+        test('return keyword in if block', () => {
+            // return lower;
+            expectToken(result, 145, 9, 15, 'return', ['source.jac', 'keyword.control.flow.jac']);
+        });
+
+        test('return keyword in function', () => {
+            // return upper;
+            expectToken(result, 147, 5, 11, 'return', ['source.jac', 'keyword.control.flow.jac']);
+        });
+    });
 });

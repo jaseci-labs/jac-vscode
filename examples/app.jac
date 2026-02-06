@@ -136,3 +136,13 @@ sem word.cost =
 impl semantic{}
 
 check
+
+def process_text(text: str) -> str {
+    trimmed = text.strip();
+    lower = trimmed.lower();
+    upper = trimmed.upper();
+    if text.endswith("test") {
+        return lower;
+    }
+    return upper;
+}
