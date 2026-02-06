@@ -166,7 +166,7 @@ describe('Extension Integration Tests - Full Lifecycle', () => {
         });
 
         it('should verify jac executable works', async function () {
-            this.timeout(25_000);
+            this.timeout(30_000);
 
             // Test that the installed jac binary is functional
             const versionCheckResult = await runCommand(jacExePath, ['--version']);

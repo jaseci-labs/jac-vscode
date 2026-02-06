@@ -145,5 +145,4 @@ def process_text(text: str) -> str {
         return lower;
     }
     return upper;
-    strip
 }
