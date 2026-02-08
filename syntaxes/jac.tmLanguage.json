@@ -1690,7 +1690,7 @@
 		"arch-var-reference": {
 			"patterns": [
 				{
-					"match": "(here|visitor|self|init|postinit|super|root)\\s*",
+					"match": "\\b(here|visitor|self|init|postinit|super|root)\\b",
 					"captures": {
 						"1": {
 							"name": "storage.type.class.jac"

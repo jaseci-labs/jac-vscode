@@ -136,3 +136,6 @@ sem word.cost =
 impl semantic{}
 
 check
+
+def init_cache() -> dict:
+    return {}

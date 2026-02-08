@@ -735,4 +735,25 @@ describe('inspectTokenScopesHandler - Location Based Tests', () => {
             expectToken(result, 138, 1, 7, 'check', ['source.jac']);
         });
     });
+
+    describe('Word boundary fix for special keywords (lines 140-141)', () => {
+        test('init_cache function name not split by init keyword', () => {
+            // def init_cache() -> dict:
+            expectToken(result, 140, 5, 15, 'init_cache', ['source.jac', 'meta.function.jac', 'entity.name.function.jac']);
+        });
+
+        test('def keyword for init_cache', () => {
+            // def init_cache() -> dict:
+            expectToken(result, 140, 1, 4, 'def', ['source.jac', 'meta.function.jac', 'storage.type.function.jac']);
+        });
+
+        test('dict return type for init_cache', () => {
+            expectToken(result, 140, 21, 25, 'dict', ['source.jac', 'meta.function.jac', 'support.type.jac']);
+        });
+
+        test('empty dict return value', () => {
+            // return {}
+            expectToken(result, 141, 5, 11, 'return', ['source.jac', 'meta.function.jac', 'keyword.control.flow.jac']);
+        });
+    });
 });
