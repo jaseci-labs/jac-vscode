@@ -465,9 +465,12 @@ describe('inspectTokenScopesHandler - Location Based Tests', () => {
             expectToken(result, 96, 17, 20, 'div', ['source.jac', 'meta.jsx.html.jac', 'entity.name.tag.html.jsx.jac']);
         });
 
-        test('JSX comment punctuation (#)', () => {
-            // # No parameters - should be treated as a comment in JSX
-            expectToken(result, 97, 13, 14, '#', ['source.jac', 'comment.line.number-sign.jac']);
+        test('JSX text "# No parameters" as string not comment', () => {
+            // # No parameters - should be treated as string content in JSX, not a comment
+            // Token includes leading whitespace: "            # No parameters"
+            const token = getTokenByLocation(result, 97, 1, 29);
+            expect(token).toBeDefined();
+            expect(token!.scopes).toContain('string.unquoted.jsx.jac');
         });
 
         test('button tag in nested JSX', () => {
@@ -492,7 +495,8 @@ describe('inspectTokenScopesHandler - Location Based Tests', () => {
         });
 
         test('Increment text as JSX string', () => {
-            const token = getTokenByLocation(result, 99, 1, 26);
+            // Token includes leading whitespace: "                Increment"
+            const token = getTokenByLocation(result, 99, 1, 27);
             expect(token).toBeDefined();
             expect(token!.scopes).toContain('string.unquoted.jsx.jac');
         });
@@ -754,6 +758,66 @@ describe('inspectTokenScopesHandler - Location Based Tests', () => {
         test('empty dict return value', () => {
             // return {}
             expectToken(result, 141, 5, 11, 'return', ['source.jac', 'meta.function.jac', 'keyword.control.flow.jac']);
+        });
+    });
+
+    describe('JSX text with # should NOT be highlighted as comment (lines 143-155)', () => {
+        test('# outside JSX is still a comment (line 143)', () => {
+            // # Test: JSX text with # should NOT be highlighted as comment
+            expectToken(result, 143, 1, 2, '#', ['source.jac', 'comment.line.number-sign.jac', 'punctuation.definition.comment.jac']);
+        });
+
+        test('text after </span> with # is string not comment (line 147)', () => {
+            // <span>{ "*" }</span> # this is not a comment; html Content <--
+            const token = getTokenByLocation(result, 147, 33, 72);
+            expect(token).toBeDefined();
+            expect(token!.text).toBe(' # this is not a comment; html Content ');
+            expect(token!.scopes).toContain('string.unquoted.jsx.jac');
+            expect(token!.scopes).not.toContain('comment.line.number-sign.jac');
+        });
+
+        test('# this is not a comment - inside <p> is string (line 149)', () => {
+            // # this is not a comment
+            const token = getTokenByLocation(result, 149, 1, 41);
+            expect(token).toBeDefined();
+            expect(token!.scopes).toContain('string.unquoted.jsx.jac');
+            expect(token!.scopes).not.toContain('comment.line.number-sign.jac');
+        });
+
+        test('#this is not # a comment - inside <p> is string (line 150)', () => {
+            // #this is not # a comment
+            const token = getTokenByLocation(result, 150, 1, 42);
+            expect(token).toBeDefined();
+            expect(token!.scopes).toContain('string.unquoted.jsx.jac');
+            expect(token!.scopes).not.toContain('comment.line.number-sign.jac');
+        });
+
+        test('block comment #* inside {} is valid comment (line 151)', () => {
+            // {#* This is the valid comment inside jsx *# }
+            expectToken(result, 151, 18, 20, '#*', ['source.jac', 'comment.block.jac', 'punctuation.definition.comment.begin.jac']);
+        });
+
+        test('block comment content inside {} is comment (line 151)', () => {
+            const token = getTokenByLocation(result, 151, 20, 58);
+            expect(token).toBeDefined();
+            expect(token!.text).toBe(' This is the valid comment inside jsx ');
+            expect(token!.scopes).toContain('comment.block.jac');
+        });
+
+        test('block comment *# end inside {} (line 151)', () => {
+            expectToken(result, 151, 58, 60, '*#', ['source.jac', 'comment.block.jac', 'punctuation.definition.comment.end.jac']);
+        });
+
+        test('<p> opening tag (line 148)', () => {
+            expectToken(result, 148, 14, 15, 'p', ['source.jac', 'meta.jsx.html.jac', 'entity.name.tag.html.jsx.jac']);
+        });
+
+        test('</p> closing tag (line 152)', () => {
+            expectToken(result, 152, 15, 16, 'p', ['source.jac', 'meta.jsx.html.jac', 'entity.name.tag.html.jsx.jac']);
+        });
+
+        test('</div> closing tag (line 153)', () => {
+            expectToken(result, 153, 11, 14, 'div', ['source.jac', 'meta.jsx.html.jac', 'entity.name.tag.html.jsx.jac']);
         });
     });
 });
