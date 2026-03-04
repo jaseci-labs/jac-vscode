@@ -1,413 +1,498 @@
-/*
- * Jest tests for EnvManager class in a VSCode extension.
- */
-
 import { EnvManager } from '../environment/manager';
-
 import * as vscode from 'vscode';
 import * as envDetection from '../utils/envDetection';
+import * as envVersion from '../utils/envVersion';
 import { getLspManager, createAndStartLsp } from '../extension';
 
+// ── Module Mocks ──────────────────────────────────────────────────────────────
 
-// Inline mock for vscode-languageclient
-jest.mock('vscode-languageclient/node', () => {
-  return {
+jest.mock('vscode-languageclient/node', () => ({
     LanguageClient: class {
-      start = jest.fn();
-      stop = jest.fn();
-      dispose = jest.fn();
+        start = jest.fn();
+        stop = jest.fn();
+        dispose = jest.fn();
     },
     LanguageClientOptions: jest.fn(),
     ServerOptions: jest.fn(),
-  };
-});
+}));
 
-
-// Mock the vscode module to simulate VSCode API behavior
-jest.mock('vscode', () => {
-  const statusBarItem = {
+const mockQuickPick = {
     show: jest.fn(),
     hide: jest.fn(),
-    text: '',
-    tooltip: '',
-    command: undefined,
-  };
+    dispose: jest.fn(),
+    onDidAccept: jest.fn(),
+    onDidHide: jest.fn(),
+    items: [] as any[],
+    selectedItems: [] as any[],
+    title: '',
+    placeholder: '',
+    busy: false,
+    matchOnDescription: false,
+    ignoreFocusOut: false,
+};
 
-  return {
-    window: {
-      createStatusBarItem: () => statusBarItem,
-      showWarningMessage: jest.fn(),
-      showInformationMessage: jest.fn(),
-      showErrorMessage: jest.fn(),
-      showQuickPick: jest.fn(),
-      showInputBox: jest.fn(),
-      showOpenDialog: jest.fn(),
-    },
-    commands: {
-      executeCommand: jest.fn(),
-    },
-    env: {
-      openExternal: jest.fn(),
-    },
-    Uri: {
-      parse: jest.fn((str: string) => ({ fsPath: str, toString: () => str })),
-      file: jest.fn((str: string) => ({ fsPath: str, toString: () => str })),
-    },
-    StatusBarAlignment: { Left: 1, Right: 2 },
-    workspace: {
-      workspaceFolders: [
-        { uri: { fsPath: '/mock/workspace' } }
-      ],
-      textDocuments: [],
-      onDidOpenTextDocument: jest.fn(),
-    },
-  };
+jest.mock('vscode', () => {
+    const statusBarItem = {
+        show: jest.fn(),
+        hide: jest.fn(),
+        text: '',
+        tooltip: '',
+        command: undefined,
+    };
+    return {
+        window: {
+            createStatusBarItem: () => statusBarItem,
+            createQuickPick: jest.fn(() => mockQuickPick),
+            showWarningMessage: jest.fn().mockResolvedValue(undefined),
+            showInformationMessage: jest.fn().mockResolvedValue(undefined),
+            showErrorMessage: jest.fn(),
+            showQuickPick: jest.fn(),
+            showInputBox: jest.fn(),
+            showOpenDialog: jest.fn(),
+        },
+        commands: { executeCommand: jest.fn() },
+        env: { openExternal: jest.fn() },
+        Uri: {
+            parse: jest.fn((str: string) => ({ fsPath: str, toString: () => str })),
+            file: jest.fn((str: string) => ({ fsPath: str, toString: () => str })),
+        },
+        StatusBarAlignment: { Left: 1, Right: 2 },
+        QuickPickItemKind: { Separator: -1 },
+        workspace: {
+            workspaceFolders: [{ uri: { fsPath: '/mock/workspace' } }],
+            textDocuments: [],
+            onDidOpenTextDocument: jest.fn(),
+        },
+    };
 });
 
 jest.mock('../utils/envDetection', () => ({
-  findPythonEnvsWithJac: jest.fn(),
-  validateJacExecutable: jest.fn(),
+    discoverJacEnvironments: jest.fn(),
+    validateJacExecutable: jest.fn(),
 }));
 
-// Mock the LspManager class
+jest.mock('../utils/envVersion', () => ({
+    getJacVersion: jest.fn(),
+    // Plain function (not jest.fn) so clearAllMocks() cannot wipe the implementation
+    compareVersions: (a: string, b: string) => {
+        const aParts = a.split('.').map(Number);
+        const bParts = b.split('.').map(Number);
+        for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
+            const diff = (aParts[i] ?? 0) - (bParts[i] ?? 0);
+            if (diff !== 0) return diff;
+        }
+        return 0;
+    },
+}));
+
 const mockLspManager = {
-  start: jest.fn().mockResolvedValue(undefined),
-  stop: jest.fn().mockResolvedValue(undefined),
-  restart: jest.fn().mockResolvedValue(undefined),
-  getClient: jest.fn().mockReturnValue(undefined),
+    start: jest.fn().mockResolvedValue(undefined),
+    stop: jest.fn().mockResolvedValue(undefined),
+    restart: jest.fn().mockResolvedValue(undefined),
+    getClient: jest.fn().mockReturnValue(undefined),
 };
 
-// Mock the extension module
 jest.mock('../extension', () => ({
-  getLspManager: jest.fn(() => mockLspManager),
-  createAndStartLsp: jest.fn().mockResolvedValue(undefined),
+    getLspManager: jest.fn(() => mockLspManager),
+    createAndStartLsp: jest.fn().mockResolvedValue(undefined),
 }));
 
+// ── Shared Setup ──────────────────────────────────────────────────────────────
 
-describe('EnvManager (Jest)', () => {
-  let context: any;
-  let envManager: EnvManager;
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-
-    // Reset LSP manager mock
-    mockLspManager.start.mockClear();
-    mockLspManager.stop.mockClear();
-    mockLspManager.restart.mockClear();
-    mockLspManager.getClient.mockClear();
-
-    context = {
-      globalState: {
-        get: jest.fn().mockReturnValue(undefined),
-        update: jest.fn().mockResolvedValue(undefined),
-      },
-      subscriptions: [],
+function makeContext(): any {
+    return {
+        globalState: {
+            get: jest.fn().mockReturnValue(undefined),
+            update: jest.fn().mockResolvedValue(undefined),
+        },
+        subscriptions: [],
     };
+}
 
-    envManager = new EnvManager(context);
-  });
+function resetQuickPickMock() {
+    mockQuickPick.items = [];
+    mockQuickPick.selectedItems = [];
+    mockQuickPick.onDidAccept.mockImplementation((cb: Function) => {
+        (mockQuickPick as any)._onAccept = cb;
+        return { dispose: jest.fn() };
+    });
+    mockQuickPick.onDidHide.mockImplementation((cb: Function) => {
+        (mockQuickPick as any)._onHide = cb;
+        return { dispose: jest.fn() };
+    });
+}
 
-  /**
-   * TEST-1: Default behavior when no environment is configured
-   *
-   * - EnvManager should provide a sensible default when no Jac environment is saved
-   * - The default should be platform-appropriate ('jac.exe' on Windows, 'jac' on Unix)
-   *
-   */
-  test('should fallback to jac in PATH if no saved env', () => {
-    // Call the method that should return the Jac executable path
-    const path = envManager.getJacPath();
+// ── EnvManager Core ───────────────────────────────────────────────────────────
 
-    // Verify it returns the appropriate platform-specific default
-    expect(path).toBe(process.platform === 'win32' ? 'jac.exe' : 'jac');
-  });
+describe('EnvManager', () => {
+    let context: ReturnType<typeof makeContext>;
+    let envManager: EnvManager;
 
-  /**
-   * TEST 2: Status bar updates correctly when environment is set
-   *
-   * - Status bar text is updated to show current Jac environment
-   * - Status bar is properly displayed to the user
-   *
-   */
-  test('should update status bar when jacPath is set', () => {
-
-    (envManager as any).jacPath = '/usr/local/bin/jac';
-
-    envManager.updateStatusBar();
-    expect((envManager as any).statusBar.text).toContain('$(check) Jac (Global)');
-  });
-
-  /**
-   * TEST 3: Manual path entry - successful validation - No LSP manager
-   *
-   * What we're testing:
-   * - User can manually enter a path to a Jac executable
-   * - Valid paths are accepted and saved
-   * - LSP manager is created and started when not already running
-   */
-  test('should accept manual path if validate passes', async () => {
-    (getLspManager as jest.Mock).mockReturnValue(undefined);
-
-    (envDetection.validateJacExecutable as jest.Mock).mockResolvedValue(true);
-    (vscode.window.showInputBox as jest.Mock).mockResolvedValue('/fake/jac');
-
-    // Execute the manual path entry workflow
-    await (envManager as any).handleManualPathEntry();
-
-    expect(envDetection.validateJacExecutable).toHaveBeenCalledWith('/fake/jac');
-    expect(context.globalState.update).toHaveBeenCalledWith('jacEnvPath', '/fake/jac');
-
-    // first message: set env
-    expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-      'Jac environment set to: /fake/jac'
-    );
-    // LSP is created and started when manager doesn't exist
-    expect(createAndStartLsp).toHaveBeenCalledTimes(1);
-  });
-
-  /**
-   * TEST 4: Manual path entry - validation failure and retry
-   *
-   * - Invalid paths are rejected with error message
-   * - User is prompted to retry after entering invalid path
-   * - Error handling works correctly in the retry flow
-   * - And he escapes by cancelling the input box
-   */
-  test('should reject invalid manual path and retry', async () => {
-
-    (envDetection.validateJacExecutable as jest.Mock).mockResolvedValue(false);
-    (vscode.window.showInputBox as jest.Mock)
-      .mockResolvedValueOnce('/bad/jac') // first try
-      .mockResolvedValueOnce(undefined); // user cancels on retry
-
-    (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue('Retry');
-
-    await (envManager as any).handleManualPathEntry();
-
-    expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
-      'Invalid Jac executable: /bad/jac',
-      'Retry',
-      'Browse for File'
-    );
-    expect(vscode.window.showInputBox).toHaveBeenCalledTimes(2);
-  });
-
-  /**
-   * TEST 5: Successful environment selection from auto-detected environments
-   *
-   * - Auto-detection finds available Jac environments
-   * - User can select from a list of found environments
-   * - Selected environment is saved and applied
-   * - LSP manager is created and started when not already running
-   */
-  test('should prompt environment selection when envs found', async () => {
-    (getLspManager as jest.Mock).mockReturnValue(undefined);
-
-    (envDetection.findPythonEnvsWithJac as jest.Mock).mockResolvedValue(['/path/to/jac']);
-    (vscode.window.showQuickPick as jest.Mock).mockResolvedValue({
-      env: '/path/to/jac',
-      label: 'Jac (MyEnv)',
-      description: '/path/to/jac',
+    beforeEach(() => {
+        jest.clearAllMocks();
+        resetQuickPickMock();
+        context = makeContext();
+        envManager = new EnvManager(context);
     });
 
-    // Execute the environment selection workflow
-    await envManager.promptEnvironmentSelection();
+    // ── init() ────────────────────────────────────────────────────────────────
 
-    expect(context.globalState.update).toHaveBeenCalledWith('jacEnvPath', '/path/to/jac');
+    describe('init()', () => {
+        test('loads a valid saved environment and does not call silentAutoSelect', async () => {
+            context.globalState.get.mockReturnValue('/saved/jac');
+            (envDetection.validateJacExecutable as jest.Mock).mockResolvedValue(true);
+            (envVersion.getJacVersion as jest.Mock).mockResolvedValue('0.11.0');
 
-    expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-      'Selected Jac environment: Jac (MyEnv)',
-      { detail: 'Path: /path/to/jac' }
-    );
+            await envManager.init();
 
-    expect(createAndStartLsp).toHaveBeenCalledTimes(1);
-  });
+            expect(envDetection.validateJacExecutable).toHaveBeenCalledWith('/saved/jac');
+            expect(envDetection.discoverJacEnvironments).not.toHaveBeenCalled();
+            expect((envManager as any).statusBar.text).toContain('Jac');
+        });
 
-  /**
-   * TEST 6: No environments found - Moved to showEnvironmentPrompt()
-   *
-   * - showEnvironmentPrompt() displays warning when no environments are detected
-   * - Offers options to install Jac or select manually
-   */
-  test('should show warning in showEnvironmentPrompt when no envs found', async () => {
-    (envDetection.findPythonEnvsWithJac as jest.Mock).mockResolvedValue([]);
-    (vscode.window.showWarningMessage as jest.Mock).mockResolvedValue(undefined);
+        test('clears an invalid saved environment and falls through to silentAutoSelect', async () => {
+            context.globalState.get.mockReturnValue('/invalid/jac');
+            (envDetection.validateJacExecutable as jest.Mock).mockResolvedValue(false);
+            (envDetection.discoverJacEnvironments as jest.Mock).mockResolvedValue([]);
+            (vscode.window.showInformationMessage as jest.Mock).mockResolvedValue(undefined);
 
-    await (envManager as any).showEnvironmentPrompt();
+            await envManager.init();
 
-    expect(vscode.window.showWarningMessage).toHaveBeenCalledWith(
-      'No Jac environments found. Install Jac to enable IntelliSense and language features.',
-      'Install Jac',
-      'Select Manually'
-    );
-  });
+            expect(context.globalState.update).toHaveBeenCalledWith('jacEnvPath', undefined);
+            expect(envDetection.discoverJacEnvironments).toHaveBeenCalled();
+            expect((envManager as any).statusBar.text).toContain('No Env');
+        });
 
-  /**
-   * TEST 7: init() with saved environment - loads and validates
-   *
-   * - Saved environment path is loaded and validated on init
-   * - Status bar is updated to reflect the loaded environment
-   * - No environment prompt is shown when jacPath is already set
-   */
-  test('should initialize with saved environment and not show prompt', async () => {
+        test('runs silentAutoSelect when no saved environment exists', async () => {
+            context.globalState.get.mockReturnValue(undefined);
+            (envDetection.discoverJacEnvironments as jest.Mock).mockResolvedValue([]);
+            (vscode.window.showInformationMessage as jest.Mock).mockResolvedValue(undefined);
 
-    context.globalState.get.mockReturnValue('/saved/jac/path');
-    (envDetection.validateJacExecutable as jest.Mock).mockResolvedValue(true);
+            await envManager.init();
 
-    await envManager.init();
-
-    expect(envDetection.validateJacExecutable).toHaveBeenCalledWith('/saved/jac/path');
-    expect((envManager as any).statusBar.text).toContain('Jac');
-    expect(vscode.window.showWarningMessage).not.toHaveBeenCalled();
-    expect(vscode.window.showInformationMessage).not.toHaveBeenCalled();
-  });
-
-  /**
-   * TEST 8: Initialization handles invalid saved environment
-   *
-   * - Invalid saved environments are detected and cleared
-   * - showEnvironmentPrompt is called after invalid env is cleared
-   */
-  test('should handle invalid saved environment during init', async () => {
-    context.globalState.get.mockReturnValue('/invalid/jac/path');
-    (envDetection.validateJacExecutable as jest.Mock).mockResolvedValue(false);
-    (envDetection.findPythonEnvsWithJac as jest.Mock).mockResolvedValue([]);
-    (vscode.window.showWarningMessage as jest.Mock).mockResolvedValue(undefined);
-
-    await envManager.init();
-
-    expect(context.globalState.update).toHaveBeenCalledWith('jacEnvPath', undefined);
-    expect((envManager as any).statusBar.text).toContain('No Env');
-    expect(vscode.window.showWarningMessage).toHaveBeenCalled();
-  });
-
-  /**
-   * TEST 9: User cancels environment selection
-   *
-   * - Graceful handling when user cancels the environment selection dialog
-   * - Status bar still updates appropriately even when user cancels
-   * - No errors occur when user dismisses dialogs
-   *
-   */
-  test('should handle user cancellation of environment selection', async () => {
-
-    (envDetection.findPythonEnvsWithJac as jest.Mock).mockResolvedValue(['/path/to/jac']);
-    (vscode.window.showQuickPick as jest.Mock).mockResolvedValue(undefined);
-
-    await envManager.promptEnvironmentSelection();
-
-    expect(context.globalState.update).not.toHaveBeenCalled();
-    expect(vscode.commands.executeCommand).not.toHaveBeenCalled();
-  });
-
-  /**
-   * TEST 10: LSP restart without VSCode reload on environment change
-   *
-   * - When LSP manager is available, it should restart the language server
-   * - Environment change is saved to global state
-   */
-  test("restarts LSP when manager exists", async () => {
-    (getLspManager as jest.Mock).mockReturnValue(mockLspManager);
-    (envDetection.findPythonEnvsWithJac as jest.Mock).mockResolvedValue(['/new/jac/path']);
-    (vscode.window.showQuickPick as jest.Mock).mockResolvedValue({
-      env: '/new/jac/path',
-      label: 'Jac (NewEnv)',
-      description: '/new/jac/path',
+            expect(envDetection.discoverJacEnvironments).toHaveBeenCalled();
+        });
     });
 
-    await envManager.promptEnvironmentSelection();
+    // ── silentAutoSelect() ────────────────────────────────────────────────────
 
-    expect(mockLspManager.restart).toHaveBeenCalledTimes(1);
-  });
+    describe('silentAutoSelect()', () => {
+        test('silently selects the only environment found without showing any UI', async () => {
+            (envDetection.discoverJacEnvironments as jest.Mock).mockResolvedValue([
+                { path: '/envs/venv/bin/jac', type: 'venv' },
+            ]);
+            (envVersion.getJacVersion as jest.Mock).mockResolvedValue('0.11.0');
 
-  /**
-   * TEST 11: LSP restart on manual path entry
-   *
-   * - Valid manual path is saved to global state
-   * - LSP is restarted if manager exists
-   */
-  test("manual path success restarts LSP if manager exists", async () => {
-    (envDetection.validateJacExecutable as jest.Mock).mockResolvedValue(true);
-    (vscode.window.showInputBox as jest.Mock).mockResolvedValue("/manual/jac");
+            await (envManager as any).silentAutoSelect();
 
-    (getLspManager as jest.Mock).mockReturnValue(mockLspManager);
+            expect(context.globalState.update).toHaveBeenCalledWith('jacEnvPath', '/envs/venv/bin/jac');
+            expect(vscode.window.showInformationMessage).not.toHaveBeenCalled();
+            expect(vscode.window.showWarningMessage).not.toHaveBeenCalled();
+        });
 
-    await (envManager as any).handleManualPathEntry();
-    expect(context.globalState.update).toHaveBeenCalledWith("jacEnvPath", "/manual/jac");
-    expect(mockLspManager.restart).toHaveBeenCalledTimes(1);
-  });
+        test('selects the environment with the highest version when multiple are found', async () => {
+            (envDetection.discoverJacEnvironments as jest.Mock).mockResolvedValue([
+                { path: '/envs/old/bin/jac', type: 'venv' },
+                { path: '/envs/new/bin/jac', type: 'venv' },
+                { path: '/envs/mid/bin/jac', type: 'venv' },
+            ]);
+            // Values consumed in Promise.all call order: old=0.9.0, new=0.12.0, mid=0.11.0
+            (envVersion.getJacVersion as jest.Mock)
+                .mockResolvedValueOnce('0.9.0')
+                .mockResolvedValueOnce('0.12.0')
+                .mockResolvedValueOnce('0.11.0');
 
-  /**
-   * TEST 12: File browser path selection without LSP
-   *
-   * - User can browse and select Jac executable via file dialog
-   * - Selected path is validated and saved to global state
-   * - LSP manager is created and started when not already running
-   */
-  test("file browser success with no LSP", async () => {
-    (getLspManager as jest.Mock).mockReturnValue(undefined);
-    (envDetection.validateJacExecutable as jest.Mock).mockResolvedValue(true);
-    (vscode.window.showOpenDialog as jest.Mock).mockResolvedValue([
-      { fsPath: "/browser/jac" },
-    ]);
+            await (envManager as any).silentAutoSelect();
 
-    await (envManager as any).handleFileBrowser();
+            expect(context.globalState.update).toHaveBeenCalledWith('jacEnvPath', '/envs/new/bin/jac');
+        });
 
-    expect(context.globalState.update).toHaveBeenCalledWith("jacEnvPath", "/browser/jac");
-    expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-      'Jac environment set to: /browser/jac'
-    );
+        test('selects the first environment when versions are equal (stable tie-break)', async () => {
+            (envDetection.discoverJacEnvironments as jest.Mock).mockResolvedValue([
+                { path: '/envs/first/bin/jac', type: 'venv' },
+                { path: '/envs/second/bin/jac', type: 'venv' },
+            ]);
+            (envVersion.getJacVersion as jest.Mock).mockResolvedValue('0.11.0');
 
-    expect(createAndStartLsp).toHaveBeenCalledTimes(1);
-  });
+            await (envManager as any).silentAutoSelect();
 
-  /**
-   * TEST 13: LSP restart on file browser selection
-   *
-   * - Path selected via file browser is saved to global state
-   * - LSP is restarted if manager exists
-   */
-  test("file browser success restarts LSP if manager exists", async () => {
-    (getLspManager as jest.Mock).mockReturnValue(mockLspManager);
-    (envDetection.validateJacExecutable as jest.Mock).mockResolvedValue(true);
-    (vscode.window.showOpenDialog as jest.Mock).mockResolvedValue([
-      { fsPath: "/browser/jac" },
-    ]);
+            expect(context.globalState.update).toHaveBeenCalledWith('jacEnvPath', '/envs/first/bin/jac');
+        });
 
-    await (envManager as any).handleFileBrowser();
+        test('falls back to the first environment when none have a detectable version', async () => {
+            (envDetection.discoverJacEnvironments as jest.Mock).mockResolvedValue([
+                { path: '/envs/a/bin/jac', type: 'venv' },
+                { path: '/envs/b/bin/jac', type: 'venv' },
+            ]);
+            (envVersion.getJacVersion as jest.Mock).mockResolvedValue(undefined);
 
-    expect(context.globalState.update).toHaveBeenCalledWith("jacEnvPath", "/browser/jac");
-    expect(mockLspManager.restart).toHaveBeenCalledTimes(1);
-  });
+            await (envManager as any).silentAutoSelect();
 
-  /**
-   * TEST 14: showEnvironmentPrompt with found environments
-   *
-   * - Shows information message when environments are found
-   * - Offers to select environment
-   * - Triggers promptEnvironmentSelection when user selects
-   */
-  test("showEnvironmentPrompt shows selection prompt when envs found", async () => {
-    (envDetection.findPythonEnvsWithJac as jest.Mock).mockResolvedValue([
-      '/path/to/jac',
-      '/another/path/jac'
-    ]);
-    (vscode.window.showInformationMessage as jest.Mock).mockResolvedValue('Select Environment');
-    (vscode.window.showQuickPick as jest.Mock).mockResolvedValue({
-      env: '/path/to/jac',
-      label: 'Jac (MyEnv)',
-      description: '/path/to/jac',
+            expect(context.globalState.update).toHaveBeenCalledWith('jacEnvPath', '/envs/a/bin/jac');
+        });
+
+        test('shows a toast with Install/Select options when no environments are found', async () => {
+            (envDetection.discoverJacEnvironments as jest.Mock).mockResolvedValue([]);
+            (vscode.window.showInformationMessage as jest.Mock).mockResolvedValue(undefined);
+
+            await (envManager as any).silentAutoSelect();
+
+            expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
+                'No Jac environment found. Install Jac to enable IntelliSense.',
+                'Install Jac',
+                'Select Manually'
+            );
+            expect(context.globalState.update).not.toHaveBeenCalled();
+        });
+
+        test('opens the install page when the user clicks "Install Jac"', async () => {
+            (envDetection.discoverJacEnvironments as jest.Mock).mockResolvedValue([]);
+            (vscode.window.showInformationMessage as jest.Mock).mockResolvedValue('Install Jac');
+
+            await (envManager as any).silentAutoSelect();
+
+            expect(vscode.env.openExternal).toHaveBeenCalled();
+        });
+
+        test('opens the environment picker when the user clicks "Select Manually"', async () => {
+            (envDetection.discoverJacEnvironments as jest.Mock).mockResolvedValue([]);
+            (vscode.window.showInformationMessage as jest.Mock).mockResolvedValue('Select Manually');
+            const spy = jest.spyOn(envManager as any, 'promptEnvironmentSelection').mockResolvedValue(undefined);
+
+            await (envManager as any).silentAutoSelect();
+
+            expect(spy).toHaveBeenCalledTimes(1);
+        });
     });
 
-    await (envManager as any).showEnvironmentPrompt();
+    // ── handleManualPathEntry() ───────────────────────────────────────────────
 
-    expect(vscode.window.showInformationMessage).toHaveBeenCalledWith(
-      'No Jac environment selected. Select one to enable IntelliSense.',
-      'Select Environment'
-    );
+    describe('handleManualPathEntry()', () => {
+        test('saves a valid path and starts/restarts the LSP', async () => {
+            (getLspManager as jest.Mock).mockReturnValue(undefined);
+            (envDetection.validateJacExecutable as jest.Mock).mockResolvedValue(true);
+            (vscode.window.showInputBox as jest.Mock).mockResolvedValue('/valid/jac');
 
-    expect(vscode.window.showQuickPick).toHaveBeenCalled();
-  });
+            await (envManager as any).handleManualPathEntry();
 
+            expect(envDetection.validateJacExecutable).toHaveBeenCalledWith('/valid/jac');
+            expect(context.globalState.update).toHaveBeenCalledWith('jacEnvPath', '/valid/jac');
+            expect(createAndStartLsp).toHaveBeenCalledTimes(1);
+        });
+
+        test('expands a tilde path to an absolute path before validation', async () => {
+            const originalHome = process.env.HOME;
+            process.env.HOME = '/home/testuser';
+            (envDetection.validateJacExecutable as jest.Mock).mockResolvedValue(true);
+            (vscode.window.showInputBox as jest.Mock).mockResolvedValue('~/bin/jac');
+
+            await (envManager as any).handleManualPathEntry();
+
+            expect(envDetection.validateJacExecutable).toHaveBeenCalledWith('/home/testuser/bin/jac');
+            process.env.HOME = originalHome;
+        });
+
+        test('does nothing when the user cancels the input box', async () => {
+            (vscode.window.showInputBox as jest.Mock).mockResolvedValue(undefined);
+
+            await (envManager as any).handleManualPathEntry();
+
+            expect(context.globalState.update).not.toHaveBeenCalled();
+            expect(envDetection.validateJacExecutable).not.toHaveBeenCalled();
+        });
+
+        test('shows an error with Retry/Browse options when the path is invalid', async () => {
+            (envDetection.validateJacExecutable as jest.Mock).mockResolvedValue(false);
+            (vscode.window.showInputBox as jest.Mock).mockResolvedValue('/bad/jac');
+            (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue(undefined);
+
+            await (envManager as any).handleManualPathEntry();
+
+            expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+                'Invalid Jac executable.',
+                'Retry',
+                'Browse'
+            );
+        });
+
+        test('retries entry when the user clicks Retry after an invalid path', async () => {
+            (envDetection.validateJacExecutable as jest.Mock).mockResolvedValue(false);
+            (vscode.window.showInputBox as jest.Mock)
+                .mockResolvedValueOnce('/bad/jac')
+                .mockResolvedValueOnce(undefined);
+            (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue('Retry');
+
+            await (envManager as any).handleManualPathEntry();
+
+            expect(vscode.window.showInputBox).toHaveBeenCalledTimes(2);
+        });
+
+        test('restarts the LSP when an LSP manager already exists', async () => {
+            (getLspManager as jest.Mock).mockReturnValue(mockLspManager);
+            (envDetection.validateJacExecutable as jest.Mock).mockResolvedValue(true);
+            (vscode.window.showInputBox as jest.Mock).mockResolvedValue('/valid/jac');
+
+            await (envManager as any).handleManualPathEntry();
+
+            expect(mockLspManager.restart).toHaveBeenCalledTimes(1);
+            expect(createAndStartLsp).not.toHaveBeenCalled();
+        });
+    });
+
+    // ── handleFileBrowser() ───────────────────────────────────────────────────
+
+    describe('handleFileBrowser()', () => {
+        test('saves a valid file selection and starts/restarts the LSP', async () => {
+            (getLspManager as jest.Mock).mockReturnValue(undefined);
+            (envDetection.validateJacExecutable as jest.Mock).mockResolvedValue(true);
+            (vscode.window.showOpenDialog as jest.Mock).mockResolvedValue([{ fsPath: '/browser/jac' }]);
+
+            await (envManager as any).handleFileBrowser();
+
+            expect(context.globalState.update).toHaveBeenCalledWith('jacEnvPath', '/browser/jac');
+            expect(createAndStartLsp).toHaveBeenCalledTimes(1);
+        });
+
+        test('does nothing when the user cancels the file dialog', async () => {
+            (vscode.window.showOpenDialog as jest.Mock).mockResolvedValue(undefined);
+
+            await (envManager as any).handleFileBrowser();
+
+            expect(context.globalState.update).not.toHaveBeenCalled();
+            expect(envDetection.validateJacExecutable).not.toHaveBeenCalled();
+        });
+
+        test('shows an error with Try Again/Enter Path Manually when selection is invalid', async () => {
+            (envDetection.validateJacExecutable as jest.Mock).mockResolvedValue(false);
+            (vscode.window.showOpenDialog as jest.Mock).mockResolvedValue([{ fsPath: '/bad/jac' }]);
+            (vscode.window.showErrorMessage as jest.Mock).mockResolvedValue(undefined);
+
+            await (envManager as any).handleFileBrowser();
+
+            expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(
+                'Not a valid Jac executable.',
+                'Try Again',
+                'Enter Path Manually'
+            );
+        });
+    });
+
+    // ── updateStatusBar() ─────────────────────────────────────────────────────
+
+    describe('updateStatusBar()', () => {
+        test('shows a check icon and env label when a path is configured', () => {
+            (envManager as any).jacPath = '/home/user/.venv/bin/jac';
+            envManager.updateStatusBar();
+            expect((envManager as any).statusBar.text).toContain('$(check)');
+            expect((envManager as any).statusBar.text).toContain('Jac');
+        });
+
+        test('includes the version in the status bar label when version is available', () => {
+            (envManager as any).jacPath = '/home/user/.venv/bin/jac';
+            (envManager as any).jacVersion = '0.11.0';
+            envManager.updateStatusBar();
+            expect((envManager as any).statusBar.text).toContain('0.11.0');
+        });
+
+        test('shows a warning icon and "No Env" when no path is configured', () => {
+            envManager.updateStatusBar();
+            expect((envManager as any).statusBar.text).toContain('$(warning)');
+            expect((envManager as any).statusBar.text).toContain('No Env');
+        });
+    });
+
+    // ── Public Accessors ──────────────────────────────────────────────────────
+
+    describe('getJacPath()', () => {
+        test('returns the configured path when set', () => {
+            (envManager as any).jacPath = '/usr/local/bin/jac';
+            expect(envManager.getJacPath()).toBe('/usr/local/bin/jac');
+        });
+
+        test('falls back to the platform default when no path is configured', () => {
+            expect(envManager.getJacPath()).toBe(process.platform === 'win32' ? 'jac.exe' : 'jac');
+        });
+    });
+
+    describe('getPythonPath()', () => {
+        test('returns python in the same directory as the configured jac executable', () => {
+            (envManager as any).jacPath = '/home/user/.venv/bin/jac';
+            const expected = process.platform === 'win32'
+                ? '/home/user/.venv/bin/python.exe'
+                : '/home/user/.venv/bin/python';
+            expect(envManager.getPythonPath()).toBe(expected);
+        });
+
+        test('falls back to the platform default when no path is configured', () => {
+            expect(envManager.getPythonPath()).toBe(process.platform === 'win32' ? 'python.exe' : 'python');
+        });
+    });
+});
+
+// ── EnvManager Private Helpers ────────────────────────────────────────────────
+
+describe('EnvManager Helpers', () => {
+    let envManager: EnvManager;
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+        const context = makeContext();
+        envManager = new EnvManager(context);
+    });
+
+    // ── getEnvName() ──────────────────────────────────────────────────────────
+
+    describe('getEnvName()', () => {
+        test('extracts the environment name from a conda envs path', () => {
+            expect((envManager as any).getEnvName('/home/user/miniconda3/envs/myenv/bin/jac')).toBe('myenv');
+        });
+
+        test('extracts the folder name from a standard venv path', () => {
+            expect((envManager as any).getEnvName('/home/user/project/.venv/bin/jac')).toBe('.venv');
+        });
+
+        test('uses the parent directory name for a generic env path', () => {
+            expect((envManager as any).getEnvName('/home/user/project/my-env/bin/jac')).toBe('my-env');
+        });
+    });
+
+    // ── formatPath() ──────────────────────────────────────────────────────────
+
+    describe('formatPath()', () => {
+        test('replaces the home directory with ~', () => {
+            const originalHome = process.env.HOME;
+            process.env.HOME = '/home/testuser';
+
+            const result = (envManager as any).formatPath('/home/testuser/project/.venv/bin/jac');
+            expect(result).toBe('~/project/.venv/bin/jac');
+
+            process.env.HOME = originalHome;
+        });
+
+        test('returns a short path unchanged', () => {
+            const shortPath = '/usr/local/bin/jac';
+            expect((envManager as any).formatPath(shortPath)).toBe(shortPath);
+        });
+    });
+
+    // ── buildEnvItem() ────────────────────────────────────────────────────────
+
+    describe('buildEnvItem()', () => {
+        test('includes the version and env name in the label', () => {
+            const item = (envManager as any).buildEnvItem('/home/user/.venv/bin/jac', 'venv', '0.11.0', false);
+            expect(item.label).toContain('Jac 0.11.0');
+            expect(item.label).toContain('.venv');
+            expect(item.envPath).toBe('/home/user/.venv/bin/jac');
+        });
+
+        test('prefixes the label with a checkmark icon when the environment is active', () => {
+            const item = (envManager as any).buildEnvItem('/home/user/.venv/bin/jac', 'venv', '0.11.0', true);
+            expect(item.label).toContain('$(check)');
+        });
+
+        test('omits the version from the label when version is not available', () => {
+            const item = (envManager as any).buildEnvItem('/home/user/.venv/bin/jac', 'venv', undefined, false);
+            expect(item.label).toBe('Jac (.venv)');
+        });
+    });
 });

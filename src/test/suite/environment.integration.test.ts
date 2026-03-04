@@ -1,12 +1,16 @@
 /**
  * JAC Language Extension - Integration Test Suite
  *
- * Tests the complete lifecycle of the Jaclang extension:
- * - Phase 1: Extension auto-activation and initialization
- *   (Verifies extension loads when .jac file is opened, language detection, status bar)
- * - Phase 2: Complete environment lifecycle (venv creation, jaclang installation,
- *            environment detection & selection, cleanup & verification)
+ * Phase 1: Extension Auto-Activation
+ *   - Extension activates when a .jac file is opened
+ *   - EnvManager is exposed via extension API
+ *   - silentAutoSelect runs on startup (status bar reflects result)
  *
+ * Phase 2: Environment Lifecycle
+ *   - Python venv creation and jaclang installation
+ *   - discoverJacEnvironments finds the workspace venv with type 'workspace'
+ *   - getJacVersion reads version from installed package (no subprocess)
+ *   - Selecting an environment updates status bar with path and version
  * NOTE: Tests run sequentially and share state across phases.
  */
 
@@ -15,6 +19,8 @@ import { expect } from 'chai';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { runCommand, fileExists, detectPython } from './testUtils';
+import { discoverJacEnvironments } from '../../utils/envDetection';
+import { getJacVersion } from '../../utils/envVersion';
 
 describe('Extension Integration Tests - Full Lifecycle', () => {
     let workspacePath: string;
@@ -53,7 +59,7 @@ describe('Extension Integration Tests - Full Lifecycle', () => {
             await vscode.window.showTextDocument(doc);
 
             // Wait for activation to complete
-            await new Promise(resolve => setTimeout(resolve, 10000));
+            await new Promise(resolve => setTimeout(resolve, 5_000));
 
             // Verify extension auto-activated after opening .jac file
             expect(ext!.isActive).to.be.true; // Should now be active
@@ -82,20 +88,19 @@ describe('Extension Integration Tests - Full Lifecycle', () => {
 
 
     /**
-     * PHASE 2: Environment Lifecycle - Install, Select, Verify & Cleanup
+     * PHASE 2: Environment Lifecycle - Install, Discover & Select
      *
      * Tests the complete environment workflow:
-     * - Detects Python and creates virtual environment
-     * - Installs jaclang package
-     * - Tests environment detection and selection with status bar verification
-     * - Cleans up by uninstalling and removing venv
+     * - Detects Python and creates virtual environment in the workspace
+     * - Installs jaclang and verifies via dist-info metadata (no subprocess)
+     * - discoverJacEnvironments finds the workspace .venv with type 'workspace'
+     * - Selecting an environment updates status bar with path and version
      */
-    describe('Phase 2: Environment Lifecycle - Install, Select, Verify & Cleanup', () => {
-        let temporaryVenvDirectory = '';
-        let venvPath = '';
+    describe('Phase 2: Environment Lifecycle', () => {
         let pythonCmd: { cmd: string; argsPrefix: string[] };
-        let venvPythonPath = '';
-        let jacExePath = '';
+        let venvPath: string;
+        let venvPythonPath: string;
+        let jacExePath: string;
 
         before(async function () {
             this.timeout(10_000);
@@ -105,10 +110,9 @@ describe('Extension Integration Tests - Full Lifecycle', () => {
                 throw new Error('Python interpreter not found. Tests require Python to be installed.');
             }
             pythonCmd = detectedPython;
-            temporaryVenvDirectory = path.join(workspacePath, '.venv');
-            venvPath = temporaryVenvDirectory;
 
             // Platform-specific paths to Python and jac executables
+            venvPath = path.join(workspacePath, '.venv');
             venvPythonPath = process.platform === 'win32'
                 ? path.join(venvPath, 'Scripts', 'python.exe')
                 : path.join(venvPath, 'bin', 'python');
@@ -134,8 +138,8 @@ describe('Extension Integration Tests - Full Lifecycle', () => {
 
             // Create isolated virtual environment where jaclang will be installed
             //recursive: true prevents errors if .venv already exists from a previous incomplete test run.
-            await fs.mkdir(temporaryVenvDirectory, { recursive: true });
 
+            await fs.mkdir(venvPath, { recursive: true });
             const venvCreationResult = await runCommand(pythonCmd.cmd, [...pythonCmd.argsPrefix, '-m', 'venv', venvPath]);
 
             expect(venvCreationResult.code).to.equal(0);
@@ -161,47 +165,67 @@ describe('Extension Integration Tests - Full Lifecycle', () => {
             expect(installationResult.code).to.equal(0);
             expect(await fileExists(jacExePath)).to.be.true;
         });
-
-        it('should verify jac executable works', async function () {
-            this.timeout(20_000);
-
-            // Test that the installed jac binary is functional
-            const versionCheckResult = await runCommand(jacExePath, ['--version']);
-
-            expect(versionCheckResult.code).to.equal(0);
-            expect(versionCheckResult.commandOutput).to.have.length.greaterThan(0);
-        });
-
-        // === ENVIRONMENT DETECTION & SELECTION PHASE ===
-
-        it('should have venv jac binary available in test environment', async function () {
+        it('jac installation is detectable via dist-info metadata', async function () {
             this.timeout(5_000);
 
-            // Verify test workspace structure contains expected fixtures
-            expect(workspacePath).to.include('fixtures/workspace');
+            const version = await getJacVersion(jacExePath);
+
+            expect(version).to.be.a('string');
+            expect(version).to.match(/^\d+\.\d+\.\d+/, 'expected a semver version like 0.7.x');
         });
 
-        it('should allow environment selection through selectEnv command and verify status bar update', async function () {
-            this.timeout(11_000);
+        // ── Discovery ─────────────────────────────────────────────────────────
 
-            // Trigger environment selection command
-            await vscode.commands.executeCommand('jaclang-extension.selectEnv');
-            await new Promise(resolve => setTimeout(resolve, 1500));
+        it('discoverJacEnvironments finds the workspace .venv and tags it as type "workspace"', async function () {
+            this.timeout(10_000);
 
-            // Navigate to .venv option in quick pick menu
-            await vscode.commands.executeCommand('workbench.action.quickOpenSelectNext');
-            await vscode.commands.executeCommand('workbench.action.quickOpenSelectNext');
+            const envs = await discoverJacEnvironments([workspacePath]);
+            const workspaceEnv = envs.find(env => env.path === jacExePath);
 
-            // Confirm selection
-            await vscode.commands.executeCommand('workbench.action.acceptSelectedQuickOpenItem');
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            expect(workspaceEnv, `Expected ${jacExePath} in discovered environments`).to.exist;
+            expect(workspaceEnv!.type).to.equal('workspace');
+            // Confirm the discovered path points to a real jac executable on disk
+            expect(await fileExists(workspaceEnv!.path)).to.be.true;
+            expect(await getJacVersion(workspaceEnv!.path)).to.match(/^\d+\.\d+\.\d+/);
+        });
 
-            // After environment selection, status bar should display the selected path
-            const statusBar = envManager?.getStatusBar?.();
+        // ── Selection ─────────────────────────────────────────────────────────
 
-            // Status bar should no longer show "No Env" and should include path indicator
-            expect(statusBar?.text).to.not.include('No Env');
-            expect(statusBar?.text.length).to.be.greaterThan(0);
+        it('selecting the workspace .venv clears "No Env" from the status bar', async function () {
+            this.timeout(30_000);
+
+            // Use selectEnvironment() to properly set env and start the LSP
+            await (envManager as any).selectEnvironment(jacExePath);
+
+            // Wait for LSP to initialize
+            await new Promise(resolve => setTimeout(resolve, 10_000));
+
+            const text = envManager.getStatusBar().text;
+            expect(text).to.not.include('No Env');
+            expect(text).to.include('$(check)');
+        });
+
+        // Verify status bar displays the installed jaclang version
+        it('status bar shows the installed version after environment selection', async function () {
+            this.timeout(10_000);
+
+            const version = await getJacVersion(jacExePath);
+            if (version) {
+                const text = envManager.getStatusBar().text;
+                expect(text).to.include(version);
+            }
+        });
+
+        // Verify getJacPath returns the correct jac executable path
+        it('getJacPath returns the selected .venv jac executable path', () => {
+            expect(envManager.getJacPath()).to.equal(jacExePath);
+        });
+
+        // Verify getPythonPath returns the python sibling next to the jac executable
+        it('getPythonPath returns the python sibling of the jac executable', () => {
+            const pythonExe = process.platform === 'win32' ? 'python.exe' : 'python';
+            const expectedPython = path.join(path.dirname(jacExePath), pythonExe);
+            expect(envManager.getPythonPath()).to.equal(expectedPython);
         });
     });
 });

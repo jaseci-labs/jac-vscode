@@ -284,4 +284,540 @@ describe('inspectTokenScopesHandler - Location Based Tests', () => {
             expectToken(result, 70, 32, 35, 'any', ['support.type.jac']);
         });
     });
+
+    describe('def app with EmailBuddyLayout component (lines 78-83)', () => {
+        test('def keyword for app function', () => {
+            // def app{
+            expectToken(result, 78, 1, 4, 'def', ['source.jac', 'meta.function.jac', 'storage.type.function.jac']);
+        });
+
+        test('app function name', () => {
+            expectToken(result, 78, 5, 8, 'app', ['source.jac', 'meta.function.jac', 'entity.name.function.jac']);
+        });
+
+        test('return keyword', () => {
+            // return (
+            expectToken(result, 79, 5, 11, 'return', ['source.jac', 'keyword.control.flow.jac']);
+        });
+
+        test('EmailBuddyLayout component tag', () => {
+            // <EmailBuddyLayout
+            expectToken(result, 80, 14, 30, 'EmailBuddyLayout', ['source.jac', 'meta.jsx.component.jac', 'support.class.component.jsx.jac']);
+        });
+
+        test('EmailBuddyLayout opening tag punctuation', () => {
+            expectToken(result, 80, 13, 14, '<', ['source.jac', 'meta.jsx.component.jac', 'punctuation.definition.tag.begin.jsx.jac']);
+        });
+
+        test('EmailBuddyLayout self-closing tag />', () => {
+            // />
+            expectToken(result, 81, 13, 15, '/>', ['source.jac', 'meta.jsx.component.jac', 'punctuation.definition.tag.end.jsx.jac']);
+        });
+
+        test('closing parenthesis and semicolon after JSX', () => {
+            // ); - ensure scope exits JSX context
+            expectToken(result, 82, 1, 8, '    );', ['source.jac']);
+        });
+
+    });
+
+    describe('Function declaration with parameters (line 85)', () => {
+        test('def keyword for _static_bash', () => {
+            // def _static_bash(commands: list, exe: str) -> str;
+            expectToken(result, 85, 1, 4, 'def', ['source.jac', 'meta.function.jac', 'storage.type.function.jac']);
+        });
+
+        test('_static_bash function name', () => {
+            expectToken(result, 85, 5, 17, '_static_bash', ['source.jac', 'meta.function.jac', 'entity.name.function.jac']);
+        });
+
+        test('commands parameter', () => {
+            expectToken(result, 85, 18, 26, 'commands', ['source.jac', 'meta.function.jac', 'meta.function.parameters.jac', 'variable.parameter.function.language.jac']);
+        });
+
+        test('commands parameter type annotation colon', () => {
+            expectToken(result, 85, 26, 27, ':', ['source.jac', 'meta.function.jac', 'meta.function.parameters.jac', 'punctuation.separator.annotation.jac']);
+        });
+
+        test('list type for commands', () => {
+            expectToken(result, 85, 28, 32, 'list', ['source.jac', 'meta.function.jac', 'meta.function.parameters.jac', 'support.type.jac']);
+        });
+
+        test('parameter separator comma', () => {
+            expectToken(result, 85, 32, 33, ',', ['source.jac', 'meta.function.jac', 'meta.function.parameters.jac', 'punctuation.separator.parameters.jac']);
+        });
+
+        test('exe parameter', () => {
+            expectToken(result, 85, 34, 37, 'exe', ['source.jac', 'meta.function.jac', 'meta.function.parameters.jac', 'variable.parameter.function.language.jac']);
+        });
+
+        test('str type for exe', () => {
+            expectToken(result, 85, 39, 42, 'str', ['source.jac', 'meta.function.jac', 'meta.function.parameters.jac', 'support.type.jac']);
+        });
+
+        test('return type str', () => {
+            expectToken(result, 85, 47, 50, 'str', ['source.jac', 'meta.function.jac', 'support.type.jac']);
+        });
+    });
+
+    describe('impl _static_bash (line 86)', () => {
+        test('impl keyword', () => {
+            // impl _static_bash{}
+            expectToken(result, 86, 1, 5, 'impl', ['source.jac', 'meta.class.jac', 'storage.type.class.jac']);
+        });
+
+        test('_static_bash as function name in impl', () => {
+            expectToken(result, 86, 6, 18, '_static_bash', ['source.jac', 'meta.class.jac', 'entity.name.function.jac']);
+        });
+    });
+
+    describe('Semantic string (sem) syntax (line 88)', () => {
+        test('sem keyword', () => {
+            // sem word.cost = "it is a expense";
+            expectToken(result, 88, 1, 4, 'sem', ['source.jac', 'meta.semstring.jac', 'storage.type.semstring.jac']);
+        });
+
+        test('word namespace', () => {
+            expectToken(result, 88, 5, 9, 'word', ['source.jac', 'meta.semstring.jac', 'entity.name.namespace.jac']);
+        });
+
+        test('cost function name in semstring', () => {
+            expectToken(result, 88, 10, 14, 'cost', ['source.jac', 'meta.semstring.jac', 'entity.name.function.semstring.jac']);
+        });
+
+        test('assignment operator in semstring', () => {
+            expectToken(result, 88, 15, 16, '=', ['source.jac', 'meta.semstring.jac', 'keyword.operator.assignment.jac']);
+        });
+
+        test('semstring value - it is a expense', () => {
+            expectToken(result, 88, 18, 33, 'it is a expense', ['source.jac', 'meta.semstring.jac', 'string.quoted.single.jac']);
+        });
+    });
+
+    describe('impl semantic (line 90)', () => {
+        test('impl keyword for semantic', () => {
+            // impl semantic{}
+            expectToken(result, 90, 1, 5, 'impl', ['source.jac', 'meta.class.jac', 'storage.type.class.jac']);
+        });
+
+        test('semantic as function name not keyword', () => {
+            expectToken(result, 90, 6, 14, 'semantic', ['source.jac', 'meta.class.jac', 'entity.name.function.jac']);
+        });
+    });
+
+    describe('cl with def:pub app and has property (lines 92-103)', () => {
+        test('cl keyword', () => {
+            // cl {
+            expectToken(result, 92, 1, 3, 'cl', ['source.jac', 'storage.modifier.declaration.jac']);
+        });
+
+        test('def keyword with pub modifier', () => {
+            // def:pub app() -> any {
+            expectToken(result, 93, 5, 8, 'def', ['source.jac', 'meta.function.jac', 'storage.type.function.jac']);
+        });
+
+        test('colon separator for modifier', () => {
+            expectToken(result, 93, 8, 9, ':', ['source.jac', 'meta.function.jac']);
+        });
+
+        test('pub modifier', () => {
+            expectToken(result, 93, 9, 12, 'pub', ['source.jac', 'meta.function.jac', 'storage.modifier.declaration.jac']);
+        });
+
+        test('app function name', () => {
+            expectToken(result, 93, 13, 16, 'app', ['source.jac', 'meta.function.jac', 'entity.name.function.jac']);
+        });
+
+        test('any return type', () => {
+            expectToken(result, 93, 22, 25, 'any', ['source.jac', 'meta.function.jac', 'support.type.jac']);
+        });
+
+        test('has keyword for property', () => {
+            // has count: int = 0;
+            expectToken(result, 94, 9, 12, 'has', ['source.jac', 'meta.property.jac', 'storage.type.function.jac']);
+        });
+
+        test('count property name', () => {
+            expectToken(result, 94, 13, 18, 'count', ['source.jac', 'meta.property.jac', 'variable.parameter.language.jac']);
+        });
+
+        test('property type annotation colon', () => {
+            expectToken(result, 94, 18, 19, ':', ['source.jac', 'meta.property.jac', 'punctuation.separator.parameters.jac']);
+        });
+
+        test('int type for count', () => {
+            expectToken(result, 94, 20, 23, 'int', ['source.jac', 'meta.property.jac', 'support.type.jac']);
+        });
+
+        test('property assignment operator', () => {
+            expectToken(result, 94, 24, 25, '=', ['source.jac', 'meta.property.jac', 'keyword.operator.assignment.jac']);
+        });
+
+        test('property default value 0', () => {
+            expectToken(result, 94, 26, 27, '0', ['source.jac', 'meta.property.jac', 'constant.numeric.dec.jac']);
+        });
+
+        test('return keyword', () => {
+            expectToken(result, 96, 9, 15, 'return', ['source.jac', 'keyword.control.flow.jac']);
+        });
+
+        test('div opening tag', () => {
+            expectToken(result, 96, 17, 20, 'div', ['source.jac', 'meta.jsx.html.jac', 'entity.name.tag.html.jsx.jac']);
+        });
+
+        test('JSX text "# No parameters" as string not comment', () => {
+            // # No parameters - should be treated as string content in JSX, not a comment
+            // Token includes leading whitespace: "            # No parameters"
+            const token = getTokenByLocation(result, 97, 1, 29);
+            expect(token).toBeDefined();
+            expect(token!.scopes).toContain('string.unquoted.jsx.jac');
+        });
+
+        test('button tag in nested JSX', () => {
+            expectToken(result, 98, 14, 20, 'button', ['source.jac', 'meta.jsx.html.jac', 'meta.jsx.html.jac', 'entity.name.tag.html.jsx.jac']);
+        });
+
+        test('onClick attribute on button', () => {
+            expectToken(result, 98, 21, 28, 'onClick', ['source.jac', 'meta.jsx.html.jac', 'meta.jsx.html.jac', 'entity.other.attribute-name.jsx.jac']);
+        });
+
+        test('lambda keyword in onClick handler', () => {
+            // lambda -> None { count = count + 1; }
+            expectToken(result, 98, 30, 36, 'lambda', ['source.jac', 'meta.jsx.html.jac', 'meta.jsx.html.jac', 'meta.embedded.expression.jsx.jac', 'keyword.control.flow.jac']);
+        });
+
+        test('None return type in lambda', () => {
+            expectToken(result, 98, 40, 44, 'None', ['source.jac', 'meta.jsx.html.jac', 'meta.jsx.html.jac', 'meta.embedded.expression.jsx.jac', 'constant.language.jac']);
+        });
+
+        test('numeric literal 1 in lambda body', () => {
+            expectToken(result, 98, 63, 64, '1', ['source.jac', 'meta.jsx.html.jac', 'meta.jsx.html.jac', 'meta.embedded.expression.jsx.jac', 'constant.numeric.dec.jac']);
+        });
+
+        test('Increment text as JSX string', () => {
+            // Token includes leading whitespace: "                Increment"
+            const token = getTokenByLocation(result, 99, 1, 27);
+            expect(token).toBeDefined();
+            expect(token!.scopes).toContain('string.unquoted.jsx.jac');
+        });
+
+        test('button closing tag', () => {
+            expectToken(result, 100, 15, 21, 'button', ['source.jac', 'meta.jsx.html.jac', 'meta.jsx.html.jac', 'entity.name.tag.html.jsx.jac']);
+        });
+
+        test('div closing tag', () => {
+            expectToken(result, 101, 11, 14, 'div', ['source.jac', 'meta.jsx.html.jac', 'entity.name.tag.html.jsx.jac']);
+        });
+    });
+
+    describe('with entry block with lambda (lines 105-111)', () => {
+        test('with keyword', () => {
+            // with entry{
+            expectToken(result, 105, 1, 5, 'with', ['source.jac', 'meta.function.jac', 'storage.type.function.jac']);
+        });
+
+        test('entry keyword', () => {
+            expectToken(result, 105, 6, 11, 'entry', ['source.jac', 'meta.function.jac', 'keyword.control.flow.jac']);
+        });
+
+        test('assignment operator for process', () => {
+            // process = lambda x: int -> int {
+            expectToken(result, 106, 13, 14, '=', ['source.jac', 'keyword.operator.assignment.jac']);
+        });
+
+        test('lambda keyword in assignment', () => {
+            expectToken(result, 106, 15, 21, 'lambda', ['source.jac', 'keyword.control.flow.jac']);
+        });
+
+        test('int type annotation for x parameter', () => {
+            expectToken(result, 106, 25, 28, 'int', ['source.jac', 'support.type.jac']);
+        });
+
+        test('int return type for lambda', () => {
+            expectToken(result, 106, 32, 35, 'int', ['source.jac', 'support.type.jac']);
+        });
+
+        test('multiplication operator', () => {
+            // doubled = x * 2;
+            expectToken(result, 107, 17, 18, '*', ['source.jac', 'keyword.operator.arithmetic.jac']);
+        });
+
+        test('numeric literal 2', () => {
+            expectToken(result, 107, 19, 20, '2', ['source.jac', 'constant.numeric.dec.jac']);
+        });
+
+        test('addition operator', () => {
+            // result = doubled + 1;
+            expectToken(result, 108, 22, 23, '+', ['source.jac', 'keyword.operator.arithmetic.jac']);
+        });
+
+        test('numeric literal 1', () => {
+            expectToken(result, 108, 24, 25, '1', ['source.jac', 'constant.numeric.dec.jac']);
+        });
+
+        test('return keyword in lambda', () => {
+            // return result;
+            expectToken(result, 109, 5, 11, 'return', ['source.jac', 'keyword.control.flow.jac']);
+        });
+    });
+
+    describe('glob variable with list comprehension (lines 113-117)', () => {
+        test('glob keyword', () => {
+            // glob enum_semstr = [
+            expectToken(result, 113, 1, 5, 'glob', ['source.jac', 'meta.property.jac', 'storage.type.variable.jac']);
+        });
+
+        test('enum_semstr property name', () => {
+            expectToken(result, 113, 6, 18, 'enum_semstr ', ['source.jac', 'meta.property.jac', 'entity.name.type.property.jac']);
+        });
+
+        test('assignment operator', () => {
+            expectToken(result, 113, 18, 19, '=', ['source.jac', 'meta.property.jac', 'keyword.operator.assignment.jac']);
+        });
+
+        test('for keyword in comprehension', () => {
+            // for member in enum_info_to_use.members
+            expectToken(result, 115, 5, 8, 'for', ['source.jac', 'meta.property.jac', 'keyword.control.flow.jac']);
+        });
+
+        test('in keyword in comprehension', () => {
+            expectToken(result, 115, 16, 18, 'in', ['source.jac', 'meta.property.jac', 'keyword.operator.logical.python']);
+        });
+
+        test('if keyword in comprehension', () => {
+            // if member.semstr
+            expectToken(result, 116, 5, 7, 'if', ['source.jac', 'meta.property.jac', 'keyword.control.flow.jac']);
+        });
+    });
+
+    describe('Docstring (line 119)', () => {
+        test('docstring opening quotes', () => {
+            // """Implementation of analysis scheduler."""
+            expectToken(result, 119, 1, 4, '"""', ['source.jac', 'string.quoted.docstring.multi.jac', 'punctuation.definition.string.begin.jac']);
+        });
+
+        test('docstring content', () => {
+            expectToken(result, 119, 4, 41, 'Implementation of analysis scheduler.', ['source.jac', 'string.quoted.docstring.multi.jac']);
+        });
+
+        test('docstring closing quotes', () => {
+            expectToken(result, 119, 41, 44, '"""', ['source.jac', 'string.quoted.docstring.multi.jac', 'punctuation.definition.string.end.jac']);
+        });
+    });
+
+    describe('import from typing (line 121)', () => {
+        test('import keyword', () => {
+            // import from typing { Optional, Callable, Any }
+            expectToken(result, 121, 1, 7, 'import', ['source.jac', 'keyword.control.import.jac']);
+        });
+
+        test('from keyword', () => {
+            expectToken(result, 121, 8, 12, 'from', ['source.jac', 'keyword.control.import.jac']);
+        });
+
+        test('typing namespace', () => {
+            expectToken(result, 121, 13, 19, 'typing', ['source.jac', 'entity.name.namespace.jac']);
+        });
+
+        test('Optional import', () => {
+            expectToken(result, 121, 22, 30, 'Optional', ['source.jac', 'entity.name.namespace.jac']);
+        });
+
+        test('comma separator after Optional', () => {
+            expectToken(result, 121, 30, 31, ',', ['source.jac', 'punctuation.separator.jac']);
+        });
+
+        test('Callable import', () => {
+            expectToken(result, 121, 32, 40, 'Callable', ['source.jac', 'entity.name.namespace.jac']);
+        });
+
+        test('Any import', () => {
+            expectToken(result, 121, 42, 45, 'Any', ['source.jac', 'entity.name.namespace.jac']);
+        });
+    });
+
+    describe('impl SchedulerConfig.default (lines 124-126)', () => {
+        test('impl keyword', () => {
+            // impl SchedulerConfig.default -> SchedulerConfig {
+            expectToken(result, 124, 1, 5, 'impl', ['source.jac', 'meta.class.jac', 'storage.type.class.jac']);
+        });
+
+        test('SchedulerConfig class name', () => {
+            expectToken(result, 124, 6, 21, 'SchedulerConfig', ['source.jac', 'meta.class.jac', 'entity.name.function.jac']);
+        });
+
+        test('dot separator', () => {
+            expectToken(result, 124, 21, 22, '.', ['source.jac', 'meta.class.jac']);
+        });
+
+        test('default method name', () => {
+            expectToken(result, 124, 22, 29, 'default', ['source.jac', 'meta.class.jac', 'entity.name.function.jac']);
+        });
+
+        test('SchedulerConfig return type', () => {
+            expectToken(result, 124, 33, 48, 'SchedulerConfig', ['source.jac', 'meta.class.jac', 'entity.name.function.jac']);
+        });
+
+        test('return keyword inside impl', () => {
+            // return SchedulerConfig();
+            expectToken(result, 125, 5, 11, 'return', ['source.jac', 'keyword.control.flow.jac']);
+        });
+
+        test('SchedulerConfig constructor call', () => {
+            expectToken(result, 125, 12, 27, 'SchedulerConfig', ['source.jac', 'meta.function-call.jac', 'meta.function-call.generic.jac']);
+        });
+    });
+
+    describe('impl PendingAnalysis.postinit (lines 129-133)', () => {
+        test('impl keyword', () => {
+            // impl PendingAnalysis.postinit -> None {
+            expectToken(result, 129, 1, 5, 'impl', ['source.jac', 'meta.class.jac', 'storage.type.class.jac']);
+        });
+
+        test('PendingAnalysis class name', () => {
+            expectToken(result, 129, 6, 21, 'PendingAnalysis', ['source.jac', 'meta.class.jac', 'entity.name.function.jac']);
+        });
+
+        test('postinit method name', () => {
+            expectToken(result, 129, 22, 30, 'postinit', ['source.jac', 'meta.class.jac', 'entity.name.function.jac']);
+        });
+
+        test('None return type in impl', () => {
+            expectToken(result, 129, 34, 38, 'None', ['source.jac', 'meta.class.jac', 'entity.name.function.jac']);
+        });
+
+        test('if keyword', () => {
+            // if self.timestamp == 0 {
+            expectToken(result, 130, 5, 7, 'if', ['source.jac', 'keyword.control.flow.jac']);
+        });
+
+        test('self keyword', () => {
+            expectToken(result, 130, 8, 12, 'self', ['source.jac', 'variable.language.special.self.jac']);
+        });
+
+        test('equality comparison operator', () => {
+            expectToken(result, 130, 23, 25, '==', ['source.jac', 'keyword.operator.comparison.jac']);
+        });
+
+        test('numeric literal 0 in condition', () => {
+            expectToken(result, 130, 26, 27, '0', ['source.jac', 'constant.numeric.dec.jac']);
+        });
+
+        test('self in assignment', () => {
+            // self.timestamp = time.time();
+            expectToken(result, 131, 9, 13, 'self', ['source.jac', 'variable.language.special.self.jac']);
+        });
+
+        test('assignment operator', () => {
+            expectToken(result, 131, 24, 25, '=', ['source.jac', 'keyword.operator.assignment.jac']);
+        });
+
+        test('time function call', () => {
+            expectToken(result, 131, 31, 35, 'time', ['source.jac', 'meta.function-call.jac', 'meta.function-call.generic.jac']);
+        });
+    });
+
+    describe('Error recovery: incomplete sem followed by impl (lines 135-136)', () => {
+        test('sem keyword in incomplete statement', () => {
+            // sem word.cost =
+            expectToken(result, 135, 1, 4, 'sem', ['source.jac', 'meta.semstring.jac', 'storage.type.semstring.jac']);
+        });
+
+        test('impl keyword after incomplete sem recovers correctly', () => {
+            // impl semantic{}
+            expectToken(result, 136, 1, 5, 'impl', ['source.jac', 'meta.class.jac', 'storage.type.class.jac']);
+        });
+
+        test('semantic function name after impl', () => {
+            // impl semantic{}
+            expectToken(result, 136, 6, 14, 'semantic', ['source.jac', 'meta.class.jac', 'entity.name.function.jac']);
+        });
+    });
+
+    describe('check is no longer a keyword', () => {
+        test('check used as identifier', () => {
+            expectToken(result, 138, 1, 7, 'check', ['source.jac']);
+        });
+    });
+
+    describe('Word boundary fix for special keywords (lines 140-141)', () => {
+        test('init_cache function name not split by init keyword', () => {
+            // def init_cache() -> dict:
+            expectToken(result, 140, 5, 15, 'init_cache', ['source.jac', 'meta.function.jac', 'entity.name.function.jac']);
+        });
+
+        test('def keyword for init_cache', () => {
+            // def init_cache() -> dict:
+            expectToken(result, 140, 1, 4, 'def', ['source.jac', 'meta.function.jac', 'storage.type.function.jac']);
+        });
+
+        test('dict return type for init_cache', () => {
+            expectToken(result, 140, 21, 25, 'dict', ['source.jac', 'meta.function.jac', 'support.type.jac']);
+        });
+
+        test('empty dict return value', () => {
+            // return {}
+            expectToken(result, 141, 5, 11, 'return', ['source.jac', 'meta.function.jac', 'keyword.control.flow.jac']);
+        });
+    });
+
+    describe('JSX text with # should NOT be highlighted as comment (lines 143-155)', () => {
+        test('# outside JSX is still a comment (line 143)', () => {
+            // # Test: JSX text with # should NOT be highlighted as comment
+            expectToken(result, 143, 1, 2, '#', ['source.jac', 'comment.line.number-sign.jac', 'punctuation.definition.comment.jac']);
+        });
+
+        test('text after </span> with # is string not comment (line 147)', () => {
+            // <span>{ "*" }</span> # this is not a comment; html Content <--
+            const token = getTokenByLocation(result, 147, 33, 72);
+            expect(token).toBeDefined();
+            expect(token!.text).toBe(' # this is not a comment; html Content ');
+            expect(token!.scopes).toContain('string.unquoted.jsx.jac');
+            expect(token!.scopes).not.toContain('comment.line.number-sign.jac');
+        });
+
+        test('# this is not a comment - inside <p> is string (line 149)', () => {
+            // # this is not a comment
+            const token = getTokenByLocation(result, 149, 1, 41);
+            expect(token).toBeDefined();
+            expect(token!.scopes).toContain('string.unquoted.jsx.jac');
+            expect(token!.scopes).not.toContain('comment.line.number-sign.jac');
+        });
+
+        test('#this is not # a comment - inside <p> is string (line 150)', () => {
+            // #this is not # a comment
+            const token = getTokenByLocation(result, 150, 1, 42);
+            expect(token).toBeDefined();
+            expect(token!.scopes).toContain('string.unquoted.jsx.jac');
+            expect(token!.scopes).not.toContain('comment.line.number-sign.jac');
+        });
+
+        test('block comment #* inside {} is valid comment (line 151)', () => {
+            // {#* This is the valid comment inside jsx *# }
+            expectToken(result, 151, 18, 20, '#*', ['source.jac', 'comment.block.jac', 'punctuation.definition.comment.begin.jac']);
+        });
+
+        test('block comment content inside {} is comment (line 151)', () => {
+            const token = getTokenByLocation(result, 151, 20, 58);
+            expect(token).toBeDefined();
+            expect(token!.text).toBe(' This is the valid comment inside jsx ');
+            expect(token!.scopes).toContain('comment.block.jac');
+        });
+
+        test('block comment *# end inside {} (line 151)', () => {
+            expectToken(result, 151, 58, 60, '*#', ['source.jac', 'comment.block.jac', 'punctuation.definition.comment.end.jac']);
+        });
+
+        test('<p> opening tag (line 148)', () => {
+            expectToken(result, 148, 14, 15, 'p', ['source.jac', 'meta.jsx.html.jac', 'entity.name.tag.html.jsx.jac']);
+        });
+
+        test('</p> closing tag (line 152)', () => {
+            expectToken(result, 152, 15, 16, 'p', ['source.jac', 'meta.jsx.html.jac', 'entity.name.tag.html.jsx.jac']);
+        });
+
+        test('</div> closing tag (line 153)', () => {
+            expectToken(result, 153, 11, 14, 'div', ['source.jac', 'meta.jsx.html.jac', 'entity.name.tag.html.jsx.jac']);
+        });
+    });
 });

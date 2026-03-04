@@ -110,7 +110,7 @@
 				{
 					"name": "meta.semstring.jac",
 					"begin": "(?x)\\b(sem)\\b(?=\\s*[[:alpha:]_]\\w*|\\s*\\n)",
-					"end": ";",
+					"end": ";|(?=^\\s*(?:cl|def|impl|with|sem|import|glob|let|enum|obj|class|node|edge|walker|test)\\b)",
 					"beginCaptures": {
 						"1": {
 							"name": "storage.type.semstring.jac"
@@ -179,8 +179,8 @@
 			"patterns": [
 				{
 					"name": "meta.class.jac",
-					  "begin": "(impl|sem)",
-					"end": "(?=:|{|\\W)",
+					"begin": "\\b(impl|sem)\\b",
+					"end": "(?=:|{)",
 					"beginCaptures": {
 						"1": {
 							"name": "storage.type.class.jac"
@@ -196,7 +196,7 @@
 							"include": "#comments"
 						},
 						{
-							"name": "entity.name.type.class.jac",
+							"name": "entity.name.function.jac",
 							"match": "\\b([[:alpha:]_]\\w*)\\b"
 						}
 					]
@@ -432,34 +432,24 @@
 		"jsx-tag-component": {
 			"patterns": [
 				{
-					"comment": "Self-closing component tag",
+					"comment": "Component tag (self-closing or with children)",
 					"name": "meta.jsx.component.jac",
-					"match": "(<)([A-Z][a-zA-Z0-9_$]*)([^>]*)(/>)",
-					"captures": {
-						"1": { "name": "punctuation.definition.tag.begin.jsx.jac" },
-						"2": { "name": "support.class.component.jsx.jac" },
-						"3": { "patterns": [{ "include": "#jsx-tag-attributes" }] },
-						"4": { "name": "punctuation.definition.tag.end.jsx.jac" }
-					}
-				},
-				{
-					"comment": "Component tag with children",
-					"name": "meta.jsx.component.jac",
-					"begin": "(<)([A-Z][a-zA-Z0-9_$]*)(?=[\\s>])",
-					"end": "(</)(\\2)(>)",
+					"begin": "(<)([A-Z][a-zA-Z0-9_$]*)(?=[\\s/>])",
+					"end": "(/>)|(</)(\\2)(>)",
 					"beginCaptures": {
 						"1": { "name": "punctuation.definition.tag.begin.jsx.jac" },
 						"2": { "name": "support.class.component.jsx.jac" }
 					},
 					"endCaptures": {
-						"1": { "name": "punctuation.definition.tag.begin.jsx.jac" },
-						"2": { "name": "support.class.component.jsx.jac" },
-						"3": { "name": "punctuation.definition.tag.end.jsx.jac" }
+						"1": { "name": "punctuation.definition.tag.end.jsx.jac" },
+						"2": { "name": "punctuation.definition.tag.end.jsx.jac" },
+						"3": { "name": "support.class.component.jsx.jac" },
+						"4": { "name": "punctuation.definition.tag.end.jsx.jac" }
 					},
 					"patterns": [
 						{
 							"begin": "(>)",
-							"end": "(?=</[A-Z])",
+							"end": "(?=</)",
 							"beginCaptures": { "1": { "name": "punctuation.definition.tag.end.jsx.jac" } },
 							"patterns": [{ "include": "#jsx-children" }]
 						},
@@ -471,34 +461,24 @@
 		"jsx-tag-html": {
 			"patterns": [
 				{
-					"comment": "Self-closing HTML tag",
+					"comment": "HTML tag (self-closing or with children)",
 					"name": "meta.jsx.html.jac",
-					"match": "(<)([a-z][a-zA-Z0-9_-]*)([^>]*)(/>)",
-					"captures": {
-						"1": { "name": "punctuation.definition.tag.begin.jsx.jac" },
-						"2": { "name": "entity.name.tag.html.jsx.jac" },
-						"3": { "patterns": [{ "include": "#jsx-tag-attributes" }] },
-						"4": { "name": "punctuation.definition.tag.end.jsx.jac" }
-					}
-				},
-				{
-					"comment": "HTML tag with children",
-					"name": "meta.jsx.html.jac",
-					"begin": "(<)([a-z][a-zA-Z0-9_-]*)(?=[\\s>])",
-					"end": "(</)(\\2)(>)",
+					"begin": "(<)([a-z][a-zA-Z0-9_-]*)(?=[\\s/>])",
+					"end": "(/>)|(</)(\\2)(>)",
 					"beginCaptures": {
 						"1": { "name": "punctuation.definition.tag.begin.jsx.jac" },
 						"2": { "name": "entity.name.tag.html.jsx.jac" }
 					},
 					"endCaptures": {
-						"1": { "name": "punctuation.definition.tag.begin.jsx.jac" },
-						"2": { "name": "entity.name.tag.html.jsx.jac" },
-						"3": { "name": "punctuation.definition.tag.end.jsx.jac" }
+						"1": { "name": "punctuation.definition.tag.end.jsx.jac" },
+						"2": { "name": "punctuation.definition.tag.end.jsx.jac" },
+						"3": { "name": "entity.name.tag.html.jsx.jac" },
+						"4": { "name": "punctuation.definition.tag.end.jsx.jac" }
 					},
 					"patterns": [
 						{
 							"begin": "(>)",
-							"end": "(?=</[a-z])",
+							"end": "(?=</)",
 							"beginCaptures": { "1": { "name": "punctuation.definition.tag.end.jsx.jac" } },
 							"patterns": [{ "include": "#jsx-children" }]
 						},
@@ -680,16 +660,13 @@
 					"include": "#jsx-evaluated-code"
 				},
 				{
-					"include": "#comments"
-				},
-				{
 					"include": "#jsx-text"
 				}
 			]
 		},
 		"jsx-text": {
 			"name": "string.unquoted.jsx.jac",
-			"match": "[^<>{}\n]+"
+			"match": "[^<>{}]+"
 		},
 		"comments": {
 			"patterns": [
@@ -967,7 +944,7 @@
 				},
 				{
 					"name": "keyword.control.flow.jac",
-					"match": "(?x)\n  \\b(?<!\\.)(\n    async | await | continue | entry | exit | del | assert | check | break | finally | for\n    | from | elif | else | if | except | pass | raise\n    | return | report | try | while | with | to | by | spawn | ignore | visit | disengage | lambda\n  )\\b\n"
+					"match": "(?x)\n  \\b(?<!\\.)(\n    async | await | continue | entry | exit | del | assert | break | finally | for\n    | from | elif | else | if | except | pass | raise\n    | return | report | try | while | with | to | by | spawn | ignore | visit | disengage | lambda\n  )\\b\n"
 				},
 				{
 					"name": "storage.modifier.declaration.jac",
@@ -1684,7 +1661,7 @@
 			"patterns": [
 				{
 					"name": "meta.class.jac",
-					  "begin": "(impl|sem)\\s*(?=\\s*[[:alpha:]_]\\w*|\\s*( |:|\\n))",
+					  "begin": "\\b(impl|sem)\\b\\s*(?=\\s*[[:alpha:]_]\\w*|\\s*( |:|\\n))",
 					"end": "((?=:| )|;)",
 					"beginCaptures": {
 						"1": {
@@ -1710,7 +1687,7 @@
 		"arch-var-reference": {
 			"patterns": [
 				{
-					"match": "(here|visitor|self|init|postinit|super|root)\\s*",
+					"match": "\\b(here|visitor|self|init|postinit|super|root)\\b",
 					"captures": {
 						"1": {
 							"name": "storage.type.class.jac"
@@ -2449,7 +2426,7 @@
 			]
 		},
 		"illegal-names": {
-			"match": "(?x)\n  \\b(?:\n    (\n      and | assert | check | async | await | break | class | continue | def\n      | del | elif | else | except | finally | for | from | global\n      | if | in | is | (?<=\\.)lambda | lambda(?=\\s*[\\.=])\n      | nonlocal | not | or | pass | raise | return | try | while | with\n      | yield\n    ) | (\n      as | import\n    )\n  )\\b\n",
+			"match": "(?x)\n  \\b(?:\n    (\n      and | assert | async | await | break | class | continue | def\n      | del | elif | else | except | finally | for | from | global\n      | if | in | is | (?<=\\.)lambda | lambda(?=\\s*[\\.=])\n      | nonlocal | not | or | pass | raise | return | try | while | with\n      | yield\n    ) | (\n      as | import\n    )\n  )\\b\n",
 			"captures": {
 				"1": {
 					"name": "keyword.control.flow.jac"

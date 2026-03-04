@@ -35,7 +35,7 @@ export async function createAndStartLsp(
 
 export async function activate(context: vscode.ExtensionContext) {
   try {
-    const envManager = new EnvManager(context);
+    envManager = new EnvManager(context);
     registerAllCommands(context, envManager);
     await envManager.init();
 

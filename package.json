@@ -1,6 +1,6 @@
 {
   "name": "jaclang-extension",
-  "version": "2026.1.15",
+  "version": "2026.2.24",
   "displayName": "%extension.displayName%",
   "description": "%extension.description%",
   "publisher": "jaseci-labs",
@@ -218,13 +218,14 @@
   },
   "main": "./out/extension.js",
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "npm run package",
     "compile": "tsc -b && npm run copy-fixtures",
     "copy-fixtures": "mkdir -p out/test/fixtures && cp -r src/test/fixtures/* out/test/fixtures/",
     "build": "vsce",
     "watch": "tsc -b -w",
+    "package": "tsc --noEmit && esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --minify",
     "deploy": "vsce publish --yarn",
-    "vsce-package": "mkdir build && vsce package -o build/jac.vsix",
+    "vsce-package": "mkdir -p build && vsce package -o build/jac.vsix",
     "test": "npm run test:unit && npm run test:integration",
     "test:unit": "jest",
     "test:integration": "npm run compile && node ./out/test/runTest.js"
@@ -246,6 +247,7 @@
     "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^2.27.0",
     "chai": "^6.2.1",
+    "esbuild": "^0.27.3",
     "glob": "^13.0.0",
     "jest": "^29.7.0",
     "mocha": "^11.7.5",
