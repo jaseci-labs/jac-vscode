@@ -91,4 +91,23 @@ export function registerAllCommands(context: vscode.ExtensionContext, envManager
             await inspectTokenScopesHandler(context);
         })
     );
+
+    // Lintfix Format: send workspace/executeCommand to LSP which applies auto-lint fixes
+    context.subscriptions.push(
+        vscode.commands.registerCommand(COMMANDS.LINTFIX_FORMAT, async () => {
+            const editor = vscode.window.activeTextEditor;
+            if (!editor || editor.document.languageId !== 'jac') {
+                return;
+            }
+            const client = getLspManager()?.getClient();
+            if (!client) {
+                vscode.window.showErrorMessage('Jac Language Server is not running.');
+                return;
+            }
+            await client.sendRequest('workspace/executeCommand', {
+                command: 'jac.lintfixFormat',
+                arguments: [editor.document.uri.toString()]
+            });
+        })
+    );
 }

@@ -80,6 +80,10 @@
       {
         "command": "jaclang-extension.inspectTokenScopes",
         "title": "Jac: Inspect Token Scopes"
+      },
+      {
+        "command": "jac.lintfixFormat",
+        "title": "Lintfix Format File"
       }
     ],
     "menus": {
@@ -105,6 +109,13 @@
           "command": "jaclang-extension.serveCurrentFile",
           "group": "navigation@99",
           "when": "resourceLangId == jac && config.jaclang-extension.showServeCommand"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "jac.lintfixFormat",
+          "when": "resourceLangId == jac",
+          "group": "1_modification"
         }
       ],
       "commandPalette": [
