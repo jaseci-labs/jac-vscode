@@ -4,6 +4,7 @@ import { registerAllCommands } from "./commands";
 import { setupVisualDebuggerWebview } from "./webview/visualDebugger";
 import { LspManager } from "./lsp/lsp_manager";
 import { validateJacExecutable } from "./utils/envDetection";
+import { registerJacTestProvider } from "./testing/jacTestProvider";
 
 let lspManager: LspManager | undefined;
 let envManager: EnvManager | undefined;
@@ -40,6 +41,7 @@ export async function activate(context: vscode.ExtensionContext) {
     await envManager.init();
 
     setupVisualDebuggerWebview(context);
+    registerJacTestProvider(context, envManager);
 
     const jacPath = envManager.getJacPath();
     const isJacAvailable = await validateJacExecutable(jacPath); // Check if Jac is available before starting LSP
