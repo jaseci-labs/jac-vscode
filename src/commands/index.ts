@@ -3,7 +3,13 @@ import { runJacCommandForCurrentFile } from '../utils';
 import { COMMANDS } from '../constants';
 import { getLspManager } from '../extension';
 import { EnvManager } from '../environment/manager';
+import * as path from 'path';
 import { inspectTokenScopesHandler } from './inspectTokenScopes';
+
+function isTestFile(uri: vscode.Uri): boolean {
+    const name = path.basename(uri.fsPath);
+    return (name.startsWith('test_') || name.endsWith('.test.jac')) && name.endsWith('.jac');
+}
 
 export function registerAllCommands(context: vscode.ExtensionContext, envManager: EnvManager) {
     context.subscriptions.push(
@@ -13,7 +19,12 @@ export function registerAllCommands(context: vscode.ExtensionContext, envManager
     );
     context.subscriptions.push(
         vscode.commands.registerCommand(COMMANDS.RUN_FILE, () => {
-            runJacCommandForCurrentFile('run', envManager);
+            const editor = vscode.window.activeTextEditor;
+            if (editor && isTestFile(editor.document.uri)) {
+                vscode.commands.executeCommand(COMMANDS.RUN_ALL_TESTS, editor.document.uri);
+            } else {
+                runJacCommandForCurrentFile('run', envManager);
+            }
         })
     );
     context.subscriptions.push(
