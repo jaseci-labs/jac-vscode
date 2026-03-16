@@ -11,12 +11,18 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+// --- Step 1: Load source (jac.tmLanguage.json) and target (jac.js) files ---
+
 const sourcePath = path.join(process.cwd(), 'syntaxes', 'jac.tmLanguage.json');
 const targetPath = path.join(process.cwd(), process.env.TARGET_PATH, process.env.TARGET_LANGUAGE_FILE);
 
 const grammar = JSON.parse(fs.readFileSync(sourcePath, 'utf8'));
 const repository = grammar.repository || {};
 const target = fs.readFileSync(targetPath, 'utf8');
+
+// --- Step 2: Define allowlists per keyword category ---
+// Only tokens present in these lists will be written into jac.js.
+// This prevents noise tokens from regex patterns slipping through.
 
 const CATEGORY_ALLOWLISTS = {
   ARCHETYPE_KEYWORDS: ['walker', 'node', 'edge', 'obj', 'class', 'enum', 'test', 'impl'],
@@ -33,12 +39,18 @@ const CATEGORY_ALLOWLISTS = {
   MISC_KEYWORDS: ['has', 'glob', 'global', 'nonlocal', 'sem', 'let', 'check', 'lambda', 'in', 'is', 'and', 'or', 'not', 'to', 'by']
 };
 
+// Single-letter tokens extracted from regex patterns are meaningless — ignore them.
 const TOKEN_NOISE = new Set(['x']);
 
+// --- Step 3: Helpers ---
+
+// Deduplicate and sort tokens alphabetically for deterministic output.
 function uniqSorted(items) {
   return [...new Set(items)].sort((left, right) => left.localeCompare(right));
 }
 
+// Strip regex syntax from a pattern and extract plain word tokens.
+// e.g. "(foo|bar|baz)\b" → ['bar', 'baz', 'foo']
 function extractAlternationWords(expr) {
   if (!expr) {
     return [];
@@ -61,6 +73,8 @@ function extractAlternationWords(expr) {
   );
 }
 
+// Look up a pattern inside a repository key by a predicate.
+// Throws clearly if the key or pattern is missing.
 function getPattern(repositoryKey, predicate) {
   const entry = repository[repositoryKey];
   if (!entry || !Array.isArray(entry.patterns)) {
@@ -73,6 +87,8 @@ function getPattern(repositoryKey, predicate) {
   return match;
 }
 
+// Read the current values of a const array from jac.js.
+// e.g. const KEYWORDS = ['foo', 'bar'] → ['foo', 'bar']
 function readConstArray(source, constName) {
   const pattern = new RegExp(`const ${constName} = \\[\\n([\\s\\S]*?)\\n  \\];`);
   const match = source.match(pattern);
@@ -82,6 +98,7 @@ function readConstArray(source, constName) {
   return [...match[1].matchAll(/'([^']+)'/g)].map((item) => item[1]);
 }
 
+// Replace the values of a const array in jac.js with new values.
 function replaceConstArray(source, constName, values) {
   const replacement = `const ${constName} = [\n${values.map((value) => `    '${value}'`).join(',\n')}\n  ];`;
   const pattern = new RegExp(`const ${constName} = \\[\\n[\\s\\S]*?\\n  \\];`);
@@ -91,13 +108,18 @@ function replaceConstArray(source, constName, values) {
   return source.replace(pattern, replacement);
 }
 
+// Merge existing values with newly extracted ones, filtered by the category allowlist.
 function mergeCategory(currentValues, extractedValues, allowlist) {
   return uniqSorted([...currentValues, ...extractedValues].filter((token) => allowlist.includes(token)));
 }
 
+// Extract plain word tokens from a list of regex pattern strings.
 function collectTokens(expressions) {
   return uniqSorted(expressions.flatMap((expr) => extractAlternationWords(expr)));
 }
+
+// --- Step 4: Extract patterns from jac.tmLanguage.json ---
+// Each pattern corresponds to a grammar rule in the TextMate JSON.
 
 const statementKeyword = repository['statement-keyword'];
 if (!statementKeyword || !Array.isArray(statementKeyword.patterns)) {
@@ -118,6 +140,9 @@ const builtinsPattern = repository['builtin-functions']?.patterns || [];
 const builtinTypesPattern = repository['builtin-types'];
 const specialVariablesPattern = repository['special-variables'];
 
+// --- Step 5: Read current const arrays from jac.js ---
+// These are the values already in the file before this sync run.
+
 const currentArrays = {
   ARCHETYPE_KEYWORDS: readConstArray(target, 'ARCHETYPE_KEYWORDS'),
   ABILITY_KEYWORDS: readConstArray(target, 'ABILITY_KEYWORDS'),
@@ -131,6 +156,8 @@ const currentArrays = {
   LITERALS: readConstArray(target, 'LITERALS'),
   LANGUAGE_VARS: readConstArray(target, 'LANGUAGE_VARS')
 };
+
+// --- Step 6: Extract fresh tokens from the grammar patterns ---
 
 const functionTokens = collectTokens([functionPattern.match]);
 const modifierTokens = collectTokens([modifierPattern.match]);
@@ -148,6 +175,10 @@ const builtinTokens = collectTokens([
 ]);
 const literalTokens = collectTokens([literalPattern.match]);
 const languageVarTokens = collectTokens([specialVariablesPattern?.match || '']);
+
+// --- Step 7: Merge current + extracted tokens per category ---
+// Each category merges its existing values with newly extracted ones,
+// then filters by its allowlist to keep only valid tokens.
 
 const nextArrays = {
   ARCHETYPE_KEYWORDS: mergeCategory(currentArrays.ARCHETYPE_KEYWORDS, classTokens, CATEGORY_ALLOWLISTS.ARCHETYPE_KEYWORDS),
@@ -167,6 +198,9 @@ const nextArrays = {
   LANGUAGE_VARS: uniqSorted([...currentArrays.LANGUAGE_VARS, ...languageVarTokens])
 };
 
+// --- Step 8: Write updated arrays back into jac.js ---
+// Only writes if something actually changed.
+
 let updated = target;
 for (const [constName, values] of Object.entries(nextArrays)) {
   updated = replaceConstArray(updated, constName, values);
@@ -175,6 +209,8 @@ for (const [constName, values] of Object.entries(nextArrays)) {
 if (updated !== target) {
   fs.writeFileSync(targetPath, updated);
 }
+
+// --- Step 9: Log results ---
 
 console.log(`Updated ${path.relative(process.cwd(), targetPath)}`);
 for (const [constName, values] of Object.entries(nextArrays)) {
