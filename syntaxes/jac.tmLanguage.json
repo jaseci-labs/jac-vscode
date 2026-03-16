@@ -1822,7 +1822,7 @@
 				{
 					"name": "meta.lambda-function.jac",
 					"begin": "(?x)\n  \\b (lambda) \\b",
-					"end": "({)|(\\n)",
+					"end": "({)|(\\n)|(?=[),])",
 					"beginCaptures": {
 						"1": {
 							"name": "storage.type.function.lambda.jac"

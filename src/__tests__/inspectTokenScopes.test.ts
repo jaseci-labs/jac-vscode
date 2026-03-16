@@ -820,4 +820,64 @@ describe('inspectTokenScopesHandler - Location Based Tests', () => {
             expectToken(result, 153, 11, 14, 'div', ['source.jac', 'meta.jsx.html.jac', 'entity.name.tag.html.jsx.jac']);
         });
     });
+
+    describe('Walker get_profile with lambda in sort (lines 157-169)', () => {
+        test('walker keyword', () => {
+            // walker get_profile {
+            expectToken(result, 157, 1, 7, 'walker', ['source.jac', 'storage.type.class.jac']);
+        });
+
+        test('get_profile walker name', () => {
+            expectToken(result, 157, 8, 19, 'get_profile', ['source.jac', 'entity.name.type.class.jac']);
+        });
+
+        test('can keyword in ability', () => {
+            // can run with Root entry {
+            expectToken(result, 158, 5, 8, 'can', ['source.jac', 'storage.type.function.jac']);
+        });
+
+        test('run as ability name', () => {
+            expectToken(result, 158, 9, 12, 'run', ['source.jac', 'entity.name.function.jac']);
+        });
+
+        test('report keyword before lambda line', () => {
+            // report \'ok\';
+            expectToken(result, 159, 9, 15, 'report', ['source.jac', 'keyword.control.flow.jac']);
+        });
+
+        test('ok string literal', () => {
+            expectToken(result, 159, 17, 19, 'ok', ['source.jac', 'string.quoted.single.jac']);
+        });
+
+        test('lambda keyword inside sort function call', () => {
+            // tweets.sort(key=lambda t: s)
+            expectToken(result, 160, 25, 31, 'lambda', ['source.jac', 'storage.type.function.lambda.jac']);
+        });
+
+        test('report keyword after lambda line is correctly tokenized (regression)', () => {
+            // Critical regression test: before the lambda end-pattern fix, the lambda scope
+            // consumed the closing ) of sort(...), leaving function-arguments scope open and
+            // causing this line to be mis-tokenized.
+            expectToken(result, 161, 9, 15, 'report', ['source.jac', 'keyword.control.flow.jac']);
+        });
+
+        test('not ok string literal after lambda line (regression)', () => {
+            expectToken(result, 161, 17, 23, 'not ok', ['source.jac', 'string.quoted.single.jac']);
+        });
+
+        test('walker keyword for get_all_profiles', () => {
+            // walker:pub get_all_profiles {
+            expectToken(result, 165, 1, 7, 'walker', ['source.jac', 'storage.type.class.jac']);
+        });
+
+        test('pub modifier on walker', () => {
+            expectToken(result, 165, 8, 11, 'pub', ['source.jac', 'storage.modifier.declaration.jac']);
+        });
+
+        test('report results in get_all_profiles', () => {
+            // report results;
+            expectToken(result, 167, 9, 15, 'report', ['source.jac', 'keyword.control.flow.jac']);
+        });
+    });
+
 });
