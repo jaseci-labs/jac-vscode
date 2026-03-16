@@ -1,0 +1,85 @@
+name: Sync highlightjs-jac grammar
+
+# Secret required: HIGHLIGHTJS_JAC_PUSH_TOKEN — contents:write + pull_requests:write on jaseci-labs/highlightjs-jac
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - syntaxes/jac.tmLanguage.json
+
+concurrency:
+  group: sync-highlightjs-jac
+  cancel-in-progress: true
+
+jobs:
+  sync-highlightjs-jac:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    env:
+      NODE_VERSION: "20"
+      TARGET_REPOSITORY: jaseci-labs/highlightjs-jac
+      TARGET_REF: main
+      TARGET_PATH: highlightjs-jac
+      TARGET_LANGUAGE_FILE: src/languages/jac.js
+      BOT_BRANCH: bot/sync-jac-grammar
+      SYNC_COMMIT_MESSAGE: "chore(sync): update Jac grammar from jac-vscode"
+
+    steps:
+      - name: Checkout jac-vscode
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Checkout highlightjs-jac
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.TARGET_REPOSITORY }}
+          ref: ${{ env.TARGET_REF }}
+          path: ${{ env.TARGET_PATH }}
+          token: ${{ secrets.HIGHLIGHTJS_JAC_PUSH_TOKEN }}
+
+      - name: Install highlightjs-jac dependencies
+        working-directory: ${{ env.TARGET_PATH }}
+        run: npm ci
+
+      - name: Sync grammar from jac.tmLanguage.json
+        run: node scripts/sync-grammar.mjs
+
+      - name: Regenerate markup fixtures
+        working-directory: ${{ env.TARGET_PATH }}
+        run: node ../jac-vscode/scripts/regenerate-fixtures.mjs
+
+      - name: Build highlightjs-jac artifacts
+        working-directory: ${{ env.TARGET_PATH }}
+        run: npm run build
+
+      - name: Enforce changed-file allowlist
+        working-directory: ${{ env.TARGET_PATH }}
+        run: bash ../jac-vscode/scripts/check-allowlist.sh
+
+      - name: Create or update pull request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.HIGHLIGHTJS_JAC_PUSH_TOKEN }}
+          path: ${{ env.TARGET_PATH }}
+          commit-message: ${{ env.SYNC_COMMIT_MESSAGE }}
+          branch: ${{ env.BOT_BRANCH }}
+          delete-branch: false
+          title: ${{ env.SYNC_COMMIT_MESSAGE }}
+          body: |
+            Auto-generated from [`${{ github.sha }}`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}) in `${{ github.repository }}`.
+
+            **Changed files:** `src/languages/jac.js`, `test/markup/jac/*.expect.txt`, `dist/*`
+
+            **Review:** keyword/builtin drift, fixture snapshots, bundle output.
+          labels: |
+            automated
+            grammar-sync
