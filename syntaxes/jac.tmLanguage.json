@@ -207,10 +207,13 @@
 			"patterns": [
 				{
 					"name": "meta.function.jac",
-					  "begin": "(?x)\\b(can|with|def|impl|sem)\\b(?=\\s*[[:alpha:]_]\\w*|\\s*({|;|\\(||\\n))",
+					  "begin": "(?x)(?:\\b(can|def|impl|sem)\\b(?=\\s*[[:alpha:]_]\\w*|\\s*({|;|\\(||\\n))|\\b(with)\\b(?=\\s+(?:[[:alpha:]_]\\w*\\s+)?entry\\b))",
 					"end": "(?=\\)|{)|;",
 					"beginCaptures": {
 						"1": {
+							"name": "storage.type.function.jac"
+						},
+						"3": {
 							"name": "storage.type.function.jac"
 						}
 					},
@@ -931,6 +934,14 @@
 				{
 					"name": "storage.type.function.jac",
 					  "match": "\\b((async\\s+)?\\s*(can|impl|sem|def))\\b"
+				},
+				{
+					"comment": "as <var> binding — color the bound variable as a variable",
+					"match": "\\b(as)\\b\\s+([[:alpha:]_]\\w*)",
+					"captures": {
+						"1": { "name": "keyword.control.flow.jac" },
+						"2": { "name": "variable.other.jac" }
+					}
 				},
 				{
 					"name": "keyword.control.flow.jac",

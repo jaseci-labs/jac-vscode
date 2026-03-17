@@ -879,5 +879,20 @@ describe('inspectTokenScopesHandler - Location Based Tests', () => {
             expectToken(result, 167, 9, 15, 'report', ['source.jac', 'keyword.control.flow.jac']);
         });
     });
+    
+    describe('with context manager in test block (line 173)', () => {
+        test('with keyword is control flow, not ability', () => {
+            // with MongoDbContainer("mongo:7.0") as mongo {
+            expectToken(result, 173, 5, 9, 'with', ['source.jac', 'keyword.control.flow.jac']);
+        });
+
+        test('as keyword in with-as binding', () => {
+            expectToken(result, 173, 40, 42, 'as', ['source.jac', 'keyword.control.flow.jac']);
+        });
+
+        test('mongo variable bound by as is colored as variable', () => {
+            expectToken(result, 173, 43, 48, 'mongo', ['source.jac', 'variable.other.jac']);
+        });
+    });
 
 });
