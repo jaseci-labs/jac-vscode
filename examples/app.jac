@@ -43,7 +43,7 @@ cl import from react {useState}
 
 cl {
 
-    def app() -> any {
+    def app() -> JsxElement {
         let [count, setCount] = useState(0);
         return <div>
             <h1>Hello, World!</h1>

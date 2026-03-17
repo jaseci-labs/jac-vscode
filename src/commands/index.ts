@@ -102,10 +102,7 @@ export function registerAllCommands(context: vscode.ExtensionContext, envManager
             const diagnostics = vscode.languages.getDiagnostics(editor.document.uri);
             const hasErrors = diagnostics.some(d => d.severity === vscode.DiagnosticSeverity.Error);
             if (hasErrors) {
-                vscode.window.withProgress(
-                    { location: vscode.ProgressLocation.Notification, title: '$(error) Lintfix did not run: fix syntax errors in the file first.', cancellable: false },
-                    () => new Promise<void>(resolve => setTimeout(resolve, 3000))
-                );
+                vscode.window.showErrorMessage('Lintfix did not run: fix syntax errors in the file first.');
                 return;
             }
             const client = getLspManager()?.getClient();
