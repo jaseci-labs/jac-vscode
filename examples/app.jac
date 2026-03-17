@@ -171,6 +171,6 @@ walker:pub get_all_profiles {
 test "mongodb user operations" {
 
     with MongoDbContainer("mongo:7.0") as mongo {
-      
+
         }
 }

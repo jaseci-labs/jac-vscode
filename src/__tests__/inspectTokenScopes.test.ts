@@ -879,7 +879,7 @@ describe('inspectTokenScopesHandler - Location Based Tests', () => {
             expectToken(result, 167, 9, 15, 'report', ['source.jac', 'keyword.control.flow.jac']);
         });
     });
-    
+
     describe('with context manager in test block (line 173)', () => {
         test('with keyword is control flow, not ability', () => {
             // with MongoDbContainer("mongo:7.0") as mongo {
