@@ -8,25 +8,18 @@ All that is needed is to have jac installed (i.e. `pip install jaclang`) and the
 
 ## Installation
 
-**For VS Code users:**
+| Marketplace | Link |
+|-------------|------|
+| VS Code Marketplace | [jaseci-labs.jaclang-extension](https://marketplace.visualstudio.com/items?itemName=jaseci-labs.jaclang-extension) |
+| Open VSX Registry | [jaseci-labs/jaclang-extension](https://open-vsx.org/extension/jaseci-labs/jaclang-extension) |
 
+**Supported IDEs:** VS Code, Cursor, Windsurf, VSCodium, Gitpod, Eclipse Theia
 
-1. Open VS Code
-2. Go to Extensions (Ctrl+Shift+X or Cmd+Shift+X on Mac)
-3. Search for "Jac" in the marketplace
-4. Install the official "Jac" extension by JaseciLabs
+1. Open the Extensions panel - `Ctrl+Shift+X` / `Cmd+Shift+X`
+2. Search **`jaclang`**
+3. Click **Install** on "Jac" by Jaseci Labs
 
-Alternatively, install directly from the [VS Code marketplace](https://marketplace.visualstudio.com/items?itemName=jaseci-labs.jaclang-extension).
-
-**For Cursor users:**
-
-1. Go to the [latest Jaseci release page](https://github.com/Jaseci-Labs/jaseci/releases/latest)
-2. Download the latest `jaclang-extension-*.vsix` file from the release assets
-3. Open Cursor
-4. Press `Ctrl+Shift+P` (or `Cmd+Shift+P` on Mac)
-5. Type `>install from vsix` and select the command
-6. Select the downloaded VSIX file
-7. The extension will be installed and ready to use
+**Manual Install (VSIX):** Download from [GitHub Releases](https://github.com/Jaseci-Labs/jac-vscode/releases/latest), then use **Extensions: Install from VSIX...** in Command Palette.
 
 # Debugging Jaclang
 
@@ -84,3 +77,12 @@ When enabled, the following features become available:
 
 - **Restart Language Server** - Button in editor title bar to restart the LSP server
 - **Inspect Token Scopes** - Dumps all TextMate token scopes for the current Jac file to help debug syntax highlighting
+
+# Releasing (Maintainers)
+
+1. Go to **Actions** → **Create Release PR**
+2. Select version bump type (patch/minor/major)
+3. A PR will be created with the version bump
+4. Review and merge the PR
+5. Go to **Actions** → **Release Extension**
+6. Click **Run workflow** to publish to VS Code Marketplace and OpenVSX

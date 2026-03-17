@@ -107,7 +107,7 @@ export async function inspectTokenScopesHandler(context: vscode.ExtensionContext
     outputChannel.appendLine('');
 
     try {
-        const wasmPath = path.join(context.extensionPath, 'node_modules', 'vscode-oniguruma', 'release', 'onig.wasm');
+        const wasmPath = path.join(context.extensionPath, 'vendor', 'onig.wasm');
         const grammarPath = path.join(context.extensionPath, 'syntaxes', 'jac.tmLanguage.json');
         const text = editor.document.getText();
 

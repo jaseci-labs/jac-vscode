@@ -880,4 +880,19 @@ describe('inspectTokenScopesHandler - Location Based Tests', () => {
         });
     });
 
+    describe('String with colon inside function call parameters (line 173)', () => {
+        test('string "mongo:7.0" is a string not a parameter annotation', () => {
+            // colon inside string should not be treated as type annotation
+            expectToken(result, 173, 28, 37, 'mongo:7.0', ['string.quoted.single.jac']);
+        });
+
+        test('as keyword', () => {
+            expectToken(result, 173, 40, 42, 'as', ['keyword.control.import.jac']);
+        });
+
+        test('mongo variable name', () => {
+            expectToken(result, 173, 43, 48, 'mongo', ['entity.name.function.jac']);
+        });
+    });
+
 });

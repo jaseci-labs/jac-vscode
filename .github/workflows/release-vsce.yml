@@ -33,6 +33,14 @@ jobs:
         env:
           VSCE_TOKEN: ${{ secrets.VSCE_TOKEN }}
 
+      - name: Install ovsx CLI
+        run: npm install -g ovsx
+
+      - name: Publish to OpenVSX
+        run: ovsx publish *.vsix --pat $OVSX_TOKEN
+        env:
+          OVSX_TOKEN: ${{ secrets.OVSX_TOKEN }}
+
       - name: Get Extension Version
         id: get_version
         run: |
