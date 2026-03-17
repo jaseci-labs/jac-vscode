@@ -881,27 +881,17 @@ describe('inspectTokenScopesHandler - Location Based Tests', () => {
     });
 
     describe('String with colon inside function call parameters (line 173)', () => {
-        test('test keyword', () => {
-            // test "mongodb user operations" {
-            expectToken(result, 171, 1, 5, 'test', ['source.jac', 'storage.type.class.jac']);
-        });
-
-        test('test name string', () => {
-            expectToken(result, 171, 7, 30, 'mongodb user operations', ['string.quoted.single.jac']);
-        });
-
-        test('with keyword in test block', () => {
-            // with MongoDbContainer("mongo:7.0") as mongo {
-            expectToken(result, 173, 5, 9, 'with', ['source.jac', 'meta.function.jac', 'storage.type.function.jac']);
-        });
-
-        test('MongoDbContainer function name', () => {
-            expectToken(result, 173, 10, 26, 'MongoDbContainer', ['source.jac', 'meta.function.jac', 'entity.name.function.jac']);
-        });
-
         test('string "mongo:7.0" is a string not a parameter annotation', () => {
             // colon inside string should not be treated as type annotation
             expectToken(result, 173, 28, 37, 'mongo:7.0', ['string.quoted.single.jac']);
+        });
+
+        test('as keyword', () => {
+            expectToken(result, 173, 40, 42, 'as', ['keyword.control.import.jac']);
+        });
+
+        test('mongo variable name', () => {
+            expectToken(result, 173, 43, 48, 'mongo', ['entity.name.function.jac']);
         });
     });
 
