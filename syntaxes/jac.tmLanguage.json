@@ -1999,6 +1999,12 @@
 					"match": "(\\*\\*|\\*)"
 				},
 				{
+					"include": "#string"
+				},
+				{
+					"include": "#literal"
+				},
+				{
 					"include": "#lambda-incomplete"
 				},
 				{
