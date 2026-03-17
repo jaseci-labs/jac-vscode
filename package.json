@@ -83,7 +83,7 @@
       },
       {
         "command": "jac.lintfixFormat",
-        "title": "Lintfix Format File"
+        "title": "Lintfix Format"
       }
     ],
     "menus": {
