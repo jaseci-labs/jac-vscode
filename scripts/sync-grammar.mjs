@@ -36,7 +36,8 @@ const CATEGORY_ALLOWLISTS = {
   IMPORT_KEYWORDS: ['import', 'include', 'from'],
   ASYNC_KEYWORDS: ['async', 'await'],
   OSP_KEYWORDS: ['visit', 'revisit', 'disengage', 'skip', 'report', 'spawn', 'entry', 'exit', 'ignore'],
-  MISC_KEYWORDS: ['has', 'glob', 'global', 'nonlocal', 'sem', 'let', 'check', 'lambda', 'in', 'is', 'and', 'or', 'not', 'to', 'by']
+  MISC_KEYWORDS: ['has', 'glob', 'global', 'nonlocal', 'sem', 'let', 'check', 'lambda', 'to', 'by'],
+  OPERATOR_KEYWORDS: ['and', 'or', 'not', 'in', 'is']
 };
 
 // Single-letter tokens extracted from regex patterns are meaningless — ignore them.
@@ -154,7 +155,8 @@ const currentArrays = {
   MISC_KEYWORDS: readConstArray(target, 'MISC_KEYWORDS'),
   BUILT_INS: readConstArray(target, 'BUILT_INS'),
   LITERALS: readConstArray(target, 'LITERALS'),
-  LANGUAGE_VARS: readConstArray(target, 'LANGUAGE_VARS')
+  LANGUAGE_VARS: readConstArray(target, 'LANGUAGE_VARS'),
+  OPERATOR_KEYWORDS: readConstArray(target, 'OPERATOR_KEYWORDS')
 };
 
 // --- Step 6: Extract fresh tokens from the grammar patterns ---
@@ -193,6 +195,7 @@ const nextArrays = {
     [...modifierTokens, ...functionTokens, ...flowTokens, ...operatorTokens, ...hasTokens],
     CATEGORY_ALLOWLISTS.MISC_KEYWORDS
   ),
+  OPERATOR_KEYWORDS: mergeCategory(currentArrays.OPERATOR_KEYWORDS, operatorTokens, CATEGORY_ALLOWLISTS.OPERATOR_KEYWORDS),
   BUILT_INS: uniqSorted([...currentArrays.BUILT_INS, ...builtinTokens]),
   LITERALS: uniqSorted([...currentArrays.LITERALS, ...literalTokens]),
   LANGUAGE_VARS: uniqSorted([...currentArrays.LANGUAGE_VARS, ...languageVarTokens])
