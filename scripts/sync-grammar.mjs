@@ -67,25 +67,12 @@ function tokensByScope(patterns, scope) {
   return uniqSorted(tokens);
 }
 
-// Read the current values of a const array from jac.js.
-function readConstArray(source, constName) {
-  const pattern = new RegExp(`const ${constName} = \\[\\n([\\s\\S]*?)\\n  \\];`);
-  const match = source.match(pattern);
-  if (!match) throw new Error(`Unable to read array declaration for ${constName}`);
-  return [...match[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
-}
-
 // Replace the values of a const array in jac.js with new values.
 function replaceConstArray(source, constName, values) {
   const replacement = `const ${constName} = [\n${values.map((v) => `    '${v}'`).join(',\n')}\n  ];`;
   const pattern = new RegExp(`const ${constName} = \\[\\n[\\s\\S]*?\\n  \\];`);
   if (!pattern.test(source)) throw new Error(`Unable to locate array declaration for ${constName}`);
   return source.replace(pattern, replacement);
-}
-
-// Merge existing values with newly extracted ones (only adds, never removes).
-function merge(current, extracted) {
-  return uniqSorted([...current, ...extracted]);
 }
 
 // Replace the word alternation inside a /\b(?:a|b|c)\b/ regex marked with // sync:MARKER.
@@ -146,34 +133,19 @@ const literalTokens = uniqSorted(extractWords(literalPattern?.match || ''));
 const specialVariablesPattern = repository['special-variables'];
 const languageVarTokens = uniqSorted(extractWords(specialVariablesPattern?.match || ''));
 
-// --- Step 5: Read current const arrays from jac.js ---
-
-const currentArrays = {
-  ARCHETYPE_KEYWORDS: readConstArray(target, 'ARCHETYPE_KEYWORDS'),
-  ABILITY_KEYWORDS:   readConstArray(target, 'ABILITY_KEYWORDS'),
-  ACCESS_KEYWORDS:    readConstArray(target, 'ACCESS_KEYWORDS'),
-  CONTROL_KEYWORDS:   readConstArray(target, 'CONTROL_KEYWORDS'),
-  IMPORT_KEYWORDS:    readConstArray(target, 'IMPORT_KEYWORDS'),
-  MISC_KEYWORDS:      readConstArray(target, 'MISC_KEYWORDS'),
-  OPERATOR_KEYWORDS:  readConstArray(target, 'OPERATOR_KEYWORDS'),
-  BUILT_INS:          readConstArray(target, 'BUILT_INS'),
-  LITERALS:           readConstArray(target, 'LITERALS'),
-  LANGUAGE_VARS:      readConstArray(target, 'LANGUAGE_VARS')
-};
-
-// --- Step 6: Merge current + extracted tokens per category ---
+// --- Step 5: Build arrays directly from JSON (full replace — JSON is single source of truth) ---
 
 const nextArrays = {
-  ARCHETYPE_KEYWORDS: merge(currentArrays.ARCHETYPE_KEYWORDS, archetypeTokens),
-  ABILITY_KEYWORDS:   merge(currentArrays.ABILITY_KEYWORDS,   abilityTokens),
-  ACCESS_KEYWORDS:    merge(currentArrays.ACCESS_KEYWORDS,    accessTokens),
-  CONTROL_KEYWORDS:   merge(currentArrays.CONTROL_KEYWORDS,   flowTokens),
-  IMPORT_KEYWORDS:    merge(currentArrays.IMPORT_KEYWORDS,    importKeyTokens),
-  MISC_KEYWORDS:      merge(currentArrays.MISC_KEYWORDS,      hasTokens),
-  OPERATOR_KEYWORDS:  merge(currentArrays.OPERATOR_KEYWORDS,  operatorTokens),
-  BUILT_INS:          merge(currentArrays.BUILT_INS,          builtinTokens),
-  LITERALS:           merge(currentArrays.LITERALS,           literalTokens),
-  LANGUAGE_VARS:      merge(currentArrays.LANGUAGE_VARS,      languageVarTokens)
+  ARCHETYPE_KEYWORDS: archetypeTokens,
+  ABILITY_KEYWORDS:   abilityTokens,
+  ACCESS_KEYWORDS:    accessTokens,
+  CONTROL_KEYWORDS:   flowTokens,
+  IMPORT_KEYWORDS:    importKeyTokens,
+  MISC_KEYWORDS:      hasTokens,
+  OPERATOR_KEYWORDS:  operatorTokens,
+  BUILT_INS:          builtinTokens,
+  LITERALS:           literalTokens,
+  LANGUAGE_VARS:      languageVarTokens
 };
 
 // --- Step 7: Write updated arrays and inline regexes back into jac.js ---
