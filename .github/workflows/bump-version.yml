@@ -1,0 +1,66 @@
+name: Create Release PR
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: "Version bump type"
+        type: choice
+        default: skip
+        options: [skip, patch, minor, major]
+
+permissions: {}
+
+jobs:
+  create-release-pr:
+    if: github.event.inputs.bump_type != 'skip'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Bump version
+        id: release
+        run: node scripts/bump-version.js ${{ inputs.bump_type }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create branch and commit
+        env:
+          BRANCH_NAME: ${{ steps.release.outputs.branch_name }}
+          PR_TITLE: ${{ steps.release.outputs.pr_title }}
+        run: |
+          git checkout -b "$BRANCH_NAME"
+          git add package.json
+          git commit -m "$PR_TITLE"
+          git push origin "$BRANCH_NAME"
+
+      - name: Create PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_TITLE: ${{ steps.release.outputs.pr_title }}
+          PR_BODY: ${{ steps.release.outputs.pr_body }}
+          BRANCH_NAME: ${{ steps.release.outputs.branch_name }}
+        run: |
+          PR_URL=$(gh pr create \
+            --title "$PR_TITLE" \
+            --body "$PR_BODY" \
+            --base main \
+            --head "$BRANCH_NAME")
+          echo "::notice::Release PR created: $PR_URL"

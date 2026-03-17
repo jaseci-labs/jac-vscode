@@ -84,3 +84,12 @@ When enabled, the following features become available:
 
 - **Restart Language Server** - Button in editor title bar to restart the LSP server
 - **Inspect Token Scopes** - Dumps all TextMate token scopes for the current Jac file to help debug syntax highlighting
+
+# Releasing (Maintainers)
+
+1. Go to **Actions** → **Create Release PR**
+2. Select version bump type (patch/minor/major)
+3. A PR will be created with the version bump
+4. Review and merge the PR
+5. Go to **Actions** → **Release Extension**
+6. Click **Run workflow** to publish to VS Code Marketplace and OpenVSX
