@@ -113,16 +113,9 @@ export function registerAllCommands(context: vscode.ExtensionContext, envManager
                 vscode.window.showErrorMessage('Jac Language Server is not running.');
                 return;
             }
-            const edits = await vscode.window.withProgress(
-                {
-                    location: vscode.ProgressLocation.Notification,
-                    title: 'Running Jac Lintfix...',
-                    cancellable: false
-                },
-                () => client.sendRequest<vscode.TextEdit[]>('jac/lintfixFormat', {
-                    textDocument: { uri: editor.document.uri.toString() }
-                })
-            );
+            const edits = await client.sendRequest<vscode.TextEdit[]>('jac/lintfixFormat', {
+                textDocument: { uri: editor.document.uri.toString() }
+            });
             if (edits && edits.length > 0) {
                 const wsEdit = new vscode.WorkspaceEdit();
                 wsEdit.set(editor.document.uri, edits.map(e =>
@@ -135,9 +128,6 @@ export function registerAllCommands(context: vscode.ExtensionContext, envManager
                     )
                 ));
                 await vscode.workspace.applyEdit(wsEdit);
-                vscode.window.showInformationMessage('Lintfix applied successfully.');
-            } else {
-                vscode.window.showInformationMessage('Lintfix: no changes needed.');
             }
         })
     );
