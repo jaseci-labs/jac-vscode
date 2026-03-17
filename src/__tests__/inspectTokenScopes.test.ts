@@ -900,13 +900,8 @@ describe('inspectTokenScopesHandler - Location Based Tests', () => {
         });
 
         test('string "mongo:7.0" is a string not a parameter annotation', () => {
-            // The colon inside "mongo:7.0" should be part of the string,
-            // not treated as a type annotation separator
-            const token = getTokenByLocation(result, 173, 28, 37);
-            expect(token).toBeDefined();
-            expect(token!.text).toBe('mongo:7.0');
-            expect(token!.scopes).toContain('string.quoted.single.jac');
-            expect(token!.scopes).not.toContain('punctuation.separator.annotation.jac');
+            // colon inside string should not be treated as type annotation
+            expectToken(result, 173, 28, 37, 'mongo:7.0', ['string.quoted.single.jac']);
         });
     });
 
