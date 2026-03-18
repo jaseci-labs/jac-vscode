@@ -46,10 +46,7 @@ describe('Extension Integration Tests - Full Lifecycle', () => {
     describe('Phase 1: Extension Auto-Activation and Initialization', () => {
 
         before(async function () {
-            this.timeout(30_000);
-
-            // Mock the environment prompts to prevent blocking during test
-            vscode.window.showWarningMessage = async () => undefined as any;
+            this.timeout(30_000);;
 
             // Get extension reference (not yet activated)
             const ext = vscode.extensions.getExtension('jaseci-labs.jaclang-extension');

@@ -21,11 +21,14 @@ export async function run(): Promise<void> {
 		glob('suite/**/**.test.js', { cwd: testsRoot })
 			.then((files) => {
 				// Define test execution priority (lower number = earlier execution)
+				// IMPORTANT: Order is critical for test state sharing:
+				// 1. Environment setup creates venv + installs jaclang
+				// 2. LSP tests need the environment to be active
+				// 3. Commands tests are DESTRUCTIVE (uninstall/delete venv, so must run last)
 				const getTestPriority = (filename: string): number => {
-					if (filename.includes('environment.integration')) return 1; // First
-					if (filename.includes('lsp.integration')) return 2;        // Middle
-					if (filename.includes('cleanup.integration')) return 3;    // Last
-					return 2; // Default: middle
+					if (filename.includes('environment.integration')) return 1; // First - Setup venv + jaclang
+					if (filename.includes('lsp.integration')) return 2;         // Second - Test LSP (needs environment)
+					if (filename.includes('commands.integration')) return 3;    // Third - Test commands (includes cleanup)
 				};
 
 				// Sort test files by priority
