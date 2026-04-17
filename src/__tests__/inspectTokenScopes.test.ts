@@ -895,4 +895,16 @@ describe('inspectTokenScopesHandler - Location Based Tests', () => {
         });
     });
 
+    describe('sv keyword highlighting (lines 179-180)', () => {
+        test('sv keyword is storage modifier like cl (line 179)', () => {
+            // sv import from endpoints { AddTodo, GetTodos }
+            expectToken(result, 179, 1, 3, 'sv', ['source.jac', 'storage.modifier.declaration.jac']);
+        });
+
+        test('sv keyword is storage modifier like cl (line 180)', () => {
+            // sv import from auth { login, logout }
+            expectToken(result, 180, 1, 3, 'sv', ['source.jac', 'storage.modifier.declaration.jac']);
+        });
+    });
+
 });

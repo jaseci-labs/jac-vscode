@@ -174,3 +174,7 @@ test "mongodb user operations" {
 
         }
 }
+
+# Test: sv import keyword highlighting
+sv import from endpoints { AddTodo, GetTodos }
+sv import from auth { login, logout }
