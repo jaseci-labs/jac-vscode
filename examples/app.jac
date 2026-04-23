@@ -178,3 +178,5 @@ test "mongodb user operations" {
 # Test: sv import keyword highlighting
 sv import from endpoints { AddTodo, GetTodos }
 sv import from auth { login, logout }
+
+na { def bytes_search_na() -> dict[str, any] { return {}; } }

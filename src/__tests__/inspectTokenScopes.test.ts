@@ -907,4 +907,11 @@ describe('inspectTokenScopesHandler - Location Based Tests', () => {
         });
     });
 
+    describe('na keyword highlighting (line 182)', () => {
+        test('na keyword is storage modifier like cl and sv (line 182)', () => {
+            // na { def bytes_search_na() -> dict[str, any] { return {}; } }
+            expectToken(result, 182, 1, 3, 'na', ['source.jac', 'storage.modifier.declaration.jac']);
+        });
+    });
+
 });
