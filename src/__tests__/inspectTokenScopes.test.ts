@@ -37,6 +37,7 @@ const walkersContent      = fs.readFileSync(path.join(EXAMPLES_DIR, 'walkers.jac
 const clSvNaContent       = fs.readFileSync(path.join(EXAMPLES_DIR, 'cl_sv_na.jac'), 'utf-8');
 const keywordEscContent   = fs.readFileSync(path.join(EXAMPLES_DIR, 'keyword_escape.jac'), 'utf-8');
 const semErrContent       = fs.readFileSync(path.join(EXAMPLES_DIR, 'sem_err.jac'), 'utf-8');
+const accessModContent    = fs.readFileSync(path.join(EXAMPLES_DIR, 'access_modifiers.jac'), 'utf-8');
 
 /**
  * Helper to assert a token has expected text and contains expected scopes
@@ -975,5 +976,31 @@ describe('sem_err.jac', () => {
         test('semantic function name after impl', () => {
             expectToken(result, 4, 6, 14, 'semantic', ['source.jac', 'meta.class.jac', 'entity.name.function.jac']);
         });
+    });
+});
+
+// ---------------------------------------------------------------------------
+// access_modifiers.jac
+// ---------------------------------------------------------------------------
+describe('access_modifiers.jac', () => {
+    let result: TokenizeResult;
+
+    beforeAll(async () => {
+        result = await tokenizeContent(accessModContent, GRAMMAR_PATH, WASM_PATH);
+    });
+
+    test('pub / priv / protect are scoped as storage modifier', () => {
+        expectToken(result, 1, 6,  9,  'pub',     ['storage.modifier.declaration.jac']);
+        expectToken(result, 2, 6,  10, 'priv',    ['storage.modifier.declaration.jac']);
+        expectToken(result, 3, 6,  13, 'protect', ['storage.modifier.declaration.jac']);
+    });
+
+    test('archetype name is highlighted after access tag on all 6 declarations', () => {
+        expectToken(result, 1, 10, 20, 'PublicNode',    ['entity.name.type.class.jac']);
+        expectToken(result, 2, 11, 22, 'PrivateNode',   ['entity.name.type.class.jac']);
+        expectToken(result, 3, 14, 27, 'ProtectedNode', ['entity.name.type.class.jac']);
+        expectToken(result, 4, 9,  18, 'PublicObj',     ['entity.name.type.class.jac']);
+        expectToken(result, 5, 12, 24, 'PublicWalker',  ['entity.name.type.class.jac']);
+        expectToken(result, 6, 10, 20, 'PublicEdge',    ['entity.name.type.class.jac']);
     });
 });
