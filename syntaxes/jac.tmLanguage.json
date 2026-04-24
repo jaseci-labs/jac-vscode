@@ -207,10 +207,13 @@
 			"patterns": [
 				{
 					"name": "meta.function.jac",
-					  "begin": "(?x)\\b(can|with|def|impl|sem)\\b(?=\\s*[[:alpha:]_]\\w*|\\s*({|;|\\(||\\n))",
+					"begin": "(?x)\\b(?:(cl|sv|na)\\s+)?(can|with|def|impl|sem)\\b(?=\\s*[[:alpha:]_]\\w*|\\s*({|;|\\(||\\n))",
 					"end": "(?=\\)|{)|;",
 					"beginCaptures": {
 						"1": {
+							"name": "storage.modifier.declaration.jac"
+						},
+						"2": {
 							"name": "storage.type.function.jac"
 						}
 					},
