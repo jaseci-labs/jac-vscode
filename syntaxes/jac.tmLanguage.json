@@ -1545,11 +1545,7 @@
 			]
 		},
 		"fstring-illegal-multi-brace": {
-			"patterns": [
-				{
-					"include": "#impossible"
-				}
-			]
+			"patterns": []
 		},
 		"f-expression": {
 			"comment": "All valid Python expressions, except comments and line continuation",
