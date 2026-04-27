@@ -939,7 +939,7 @@
 			"patterns": [
 				{
 					"name": "storage.type.function.jac",
-					  "match": "\\b((async\\s+)?\\s*(can|impl|sem|def))\\b"
+					  "match": "\\b((async\\s+)?(can|impl|sem|def))\\b"
 				},
 				{
 					"name": "keyword.control.flow.jac",
