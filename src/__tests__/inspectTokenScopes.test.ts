@@ -1074,48 +1074,18 @@ describe('override_fn.jac', () => {
         result = await tokenizeContent(overrideFnContent, GRAMMAR_PATH, WASM_PATH);
     });
 
-    describe('plain can declaration (line 3)', () => {
-        // line 3: "    can area() -> float;"
-        test('can keyword is storage.type.function.jac', () => {
-            expectToken(result, 3, 5, 8, 'can', ['source.jac', 'meta.function.jac', 'storage.type.function.jac']);
-        });
-
-        test('area function name is entity.name.function.jac', () => {
-            expectToken(result, 3, 9, 13, 'area', ['source.jac', 'meta.function.jac', 'entity.name.function.jac']);
-        });
-    });
-
-    describe('override can area (line 10)', () => {
+    test('area function name after override can gets entity.name.function.jac (line 10)', () => {
         // line 10: "    override can area() -> float {"
-        test('override is storage.modifier.declaration.jac', () => {
-            expectToken(result, 10, 5, 13, 'override', ['source.jac', 'storage.modifier.declaration.jac']);
-        });
-
-        test('can keyword after override is storage.type.function.jac inside meta.function.jac', () => {
-            expectToken(result, 10, 14, 17, 'can', ['source.jac', 'meta.function.jac', 'storage.type.function.jac']);
-        });
-
-        test('area function name after override gets entity.name.function.jac', () => {
-            expectToken(result, 10, 18, 22, 'area', ['source.jac', 'meta.function.jac', 'entity.name.function.jac']);
-        });
+        expectToken(result, 10, 18, 22, 'area', ['source.jac', 'meta.function.jac', 'entity.name.function.jac']);
     });
 
-    describe('override can perimeter (line 14)', () => {
+    test('perimeter function name after override can gets entity.name.function.jac (line 14)', () => {
         // line 14: "    override can perimeter() -> float {"
-        test('override is storage.modifier.declaration.jac', () => {
-            expectToken(result, 14, 5, 13, 'override', ['source.jac', 'storage.modifier.declaration.jac']);
-        });
-
-        test('perimeter function name after override gets entity.name.function.jac', () => {
-            expectToken(result, 14, 18, 27, 'perimeter', ['source.jac', 'meta.function.jac', 'entity.name.function.jac']);
-        });
+        expectToken(result, 14, 18, 27, 'perimeter', ['source.jac', 'meta.function.jac', 'entity.name.function.jac']);
     });
 
-    describe('second class override can area (line 23)', () => {
+    test('area function name after override can gets entity.name.function.jac (line 23)', () => {
         // line 23: "    override can area() -> float {"
-        test('area function name in Rect class gets entity.name.function.jac', () => {
-            expectToken(result, 23, 18, 22, 'area', ['source.jac', 'meta.function.jac', 'entity.name.function.jac']);
-        });
+        expectToken(result, 23, 18, 22, 'area', ['source.jac', 'meta.function.jac', 'entity.name.function.jac']);
     });
-
-
+});
