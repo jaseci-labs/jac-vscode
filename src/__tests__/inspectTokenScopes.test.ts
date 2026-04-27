@@ -950,24 +950,6 @@ describe('keyword_escape.jac', () => {
             expect(fragmentClose!.text).toBe('</>');
             expect(fragmentClose!.scopes).toContain('punctuation.definition.tag.jsx.jac');
         });
-
-        test('fragment closing tag </>', () => {
-            const fragmentClose = getTokenByLocation(result, 12, 13, 16);
-            expect(fragmentClose).toBeDefined();
-            expect(fragmentClose!.text).toBe('</>');
-            expect(fragmentClose!.scopes).toContain('punctuation.definition.tag.jsx.jac');
-        });
-    });
-});
-
-// ---------------------------------------------------------------------------
-// sem_err.jac
-// ---------------------------------------------------------------------------
-describe('sem_err.jac', () => {
-    let result: TokenizeResult;
-
-    beforeAll(async () => {
-        result = await tokenizeContent(semErrContent, GRAMMAR_PATH, WASM_PATH);
     });
 });
 
