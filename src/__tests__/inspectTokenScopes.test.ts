@@ -950,6 +950,24 @@ describe('keyword_escape.jac', () => {
             expect(fragmentClose!.text).toBe('</>');
             expect(fragmentClose!.scopes).toContain('punctuation.definition.tag.jsx.jac');
         });
+
+        test('fragment closing tag </>', () => {
+            const fragmentClose = getTokenByLocation(result, 12, 13, 16);
+            expect(fragmentClose).toBeDefined();
+            expect(fragmentClose!.text).toBe('</>');
+            expect(fragmentClose!.scopes).toContain('punctuation.definition.tag.jsx.jac');
+        });
+    });
+});
+
+// ---------------------------------------------------------------------------
+// sem_err.jac
+// ---------------------------------------------------------------------------
+describe('sem_err.jac', () => {
+    let result: TokenizeResult;
+
+    beforeAll(async () => {
+        result = await tokenizeContent(semErrContent, GRAMMAR_PATH, WASM_PATH);
     });
 });
 
@@ -977,6 +995,21 @@ describe('sem_err.jac', () => {
         test('semantic function name after impl', () => {
             expectToken(result, 4, 6, 14, 'semantic', ['source.jac', 'meta.class.jac', 'entity.name.function.jac']);
         });
+
+        test('semantic function name after impl', () => {
+            expectToken(result, 4, 6, 14, 'semantic', ['source.jac', 'meta.class.jac', 'entity.name.function.jac']);
+        });
+    });
+});
+
+// ---------------------------------------------------------------------------
+// access_modifiers.jac
+// ---------------------------------------------------------------------------
+describe('access_modifiers.jac', () => {
+    let result: TokenizeResult;
+
+    beforeAll(async () => {
+        result = await tokenizeContent(accessModContent, GRAMMAR_PATH, WASM_PATH);
     });
 });
 
