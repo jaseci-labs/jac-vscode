@@ -1007,7 +1007,7 @@ describe('access_modifiers.jac', () => {
     });
 });
 
-// ---------------------------------------------------------------------------          
+// ---------------------------------------------------------------------------
 // lambda_fstring.jac  — lambda must not exit at '{' inside f-string
 // ---------------------------------------------------------------------------
 describe('lambda_fstring.jac', () => {
@@ -1117,5 +1117,5 @@ describe('override_fn.jac', () => {
             expectToken(result, 23, 18, 22, 'area', ['source.jac', 'meta.function.jac', 'entity.name.function.jac']);
         });
     });
-          
+
 
