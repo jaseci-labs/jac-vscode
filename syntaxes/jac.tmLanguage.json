@@ -11,6 +11,9 @@
 		"elements": {
 			"patterns": [
 				{
+					"include": "#decorator"
+				},
+				{
 					"include": "#import"
 				},
 				{
@@ -1851,6 +1854,12 @@
 					"contentName": "meta.function.lambda.parameters.jac",
 					"patterns": [
 						{
+							"include": "#string"
+						},
+						{
+							"include": "#function-call"
+						},
+						{
 							"name": "keyword.operator.positional.parameter.jac",
 							"match": "/"
 						},
@@ -2215,9 +2224,6 @@
 		},
 		"decorator-name": {
 			"patterns": [
-				{
-					"include": "#builtin-callables"
-				},
 				{
 					"include": "#illegal-object-name"
 				},

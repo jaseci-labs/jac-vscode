@@ -38,6 +38,7 @@ const clSvNaContent       = fs.readFileSync(path.join(EXAMPLES_DIR, 'cl_sv_na.ja
 const keywordEscContent   = fs.readFileSync(path.join(EXAMPLES_DIR, 'keyword_escape.jac'), 'utf-8');
 const semErrContent       = fs.readFileSync(path.join(EXAMPLES_DIR, 'sem_err.jac'), 'utf-8');
 const accessModContent    = fs.readFileSync(path.join(EXAMPLES_DIR, 'access_modifiers.jac'), 'utf-8');
+const lambdaFstringContent = fs.readFileSync(path.join(EXAMPLES_DIR, 'lambda_fstring.jac'), 'utf-8');
 const overrideFnContent   = fs.readFileSync(path.join(EXAMPLES_DIR, 'override_fn.jac'), 'utf-8');
 
 /**
@@ -1006,6 +1007,63 @@ describe('access_modifiers.jac', () => {
     });
 });
 
+// ---------------------------------------------------------------------------          
+// lambda_fstring.jac  — lambda must not exit at '{' inside f-string
+// ---------------------------------------------------------------------------
+describe('lambda_fstring.jac', () => {
+    let result: TokenizeResult;
+
+    beforeAll(async () => {
+        result = await tokenizeContent(lambdaFstringContent, GRAMMAR_PATH, WASM_PATH);
+    });
+
+    describe('same-line paren: sorted( with lambda f-string body (lines 6-8)', () => {
+        // line 7: "        items, key=lambda cls : source.find(f"class {cls.__name__}"),
+
+        test('lambda keyword is scoped (col 20-26)', () => {
+            expectToken(result, 7, 20, 26, 'lambda', ['source.jac', 'storage.type.function.lambda.jac']);
+        });
+
+        test('trailing comma after f-string body is argument separator — not broken by premature lambda exit at { (col 69-70)', () => {
+            // If lambda exits at '{' inside the f-string, the comma ends up in a
+            // spurious string scope instead of being a function-argument separator.
+            expectToken(result, 7, 69, 70, ',', ['source.jac', 'punctuation.separator.arguments.jac']);
+        });
+
+        test('closing ) of sorted() is argument-end punctuation (line 8, col 5-6)', () => {
+            expectToken(result, 8, 5, 6, ')', ['source.jac', 'punctuation.definition.arguments.end.jac']);
+        });
+    });
+
+    describe('lambda with plain string containing braces (line 20)', () => {
+        // line 20: "    result = sorted(items, key=lambda x : x.find("hello {world}"));
+
+        test('lambda keyword (col 32-38)', () => {
+            expectToken(result, 20, 32, 38, 'lambda', ['source.jac', 'storage.type.function.lambda.jac']);
+        });
+
+        test('outer ) of sorted() closes correctly (col 66-67)', () => {
+            expectToken(result, 20, 66, 67, ')', ['source.jac', 'punctuation.definition.arguments.end.jac']);
+        });
+    });
+
+    describe('lambda with nested function call in body (line 24)', () => {
+        // line 24: "    result = map(lambda x : str(x), items);
+
+        test('lambda keyword (col 18-24)', () => {
+            expectToken(result, 24, 18, 24, 'lambda', ['source.jac', 'storage.type.function.lambda.jac']);
+        });
+
+        test('str builtin in lambda body is typed (col 29-32)', () => {
+            expectToken(result, 24, 29, 32, 'str', ['source.jac', 'support.type.jac']);
+        });
+
+        test('comma separating lambda arg from items (col 35-36)', () => {
+            expectToken(result, 24, 35, 36, ',', ['source.jac', 'punctuation.separator.arguments.jac']);
+        });
+    });
+});
+
 // ---------------------------------------------------------------------------
 // override_fn.jac — function names after override get entity.name.function
 // ---------------------------------------------------------------------------
@@ -1059,4 +1117,5 @@ describe('override_fn.jac', () => {
             expectToken(result, 23, 18, 22, 'area', ['source.jac', 'meta.function.jac', 'entity.name.function.jac']);
         });
     });
-});
+          
+
