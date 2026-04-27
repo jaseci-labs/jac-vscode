@@ -977,21 +977,6 @@ describe('sem_err.jac', () => {
         test('semantic function name after impl', () => {
             expectToken(result, 4, 6, 14, 'semantic', ['source.jac', 'meta.class.jac', 'entity.name.function.jac']);
         });
-
-        test('semantic function name after impl', () => {
-            expectToken(result, 4, 6, 14, 'semantic', ['source.jac', 'meta.class.jac', 'entity.name.function.jac']);
-        });
-    });
-});
-
-// ---------------------------------------------------------------------------
-// access_modifiers.jac
-// ---------------------------------------------------------------------------
-describe('access_modifiers.jac', () => {
-    let result: TokenizeResult;
-
-    beforeAll(async () => {
-        result = await tokenizeContent(accessModContent, GRAMMAR_PATH, WASM_PATH);
     });
 });
 
