@@ -18,7 +18,7 @@ export class EnvManager {
     }
 
     async init() {
-        this.jacPath = this.context.globalState.get<string>('jacEnvPath');
+        this.jacPath = this.context.workspaceState.get<string>('jacEnvPath');
         if (this.jacPath) { this.jacVersion = await getJacVersion(this.jacPath); }
         this.updateStatusBar();
 
@@ -59,7 +59,7 @@ export class EnvManager {
         if (bestEnv) {
             this.jacPath = bestEnv.env.path;
             this.jacVersion = bestEnv.version;
-            await this.context.globalState.update('jacEnvPath', bestEnv.env.path);
+            await this.context.workspaceState.update('jacEnvPath', bestEnv.env.path);
             this.updateStatusBar();
         }
     }
@@ -106,7 +106,7 @@ export class EnvManager {
         if (this.jacPath && !(await validateJacExecutable(this.jacPath))) {
             this.jacPath = undefined;
             this.jacVersion = undefined;
-            await this.context.globalState.update('jacEnvPath', undefined);
+            await this.context.workspaceState.update('jacEnvPath', undefined);
             this.updateStatusBar();
         }
     }
@@ -294,7 +294,7 @@ export class EnvManager {
     private async selectEnvironment(envPath: string): Promise<void> {
         this.jacPath = envPath;
         this.jacVersion = await getJacVersion(envPath);
-        await this.context.globalState.update('jacEnvPath', envPath);
+        await this.context.workspaceState.update('jacEnvPath', envPath);
         this.updateStatusBar();
         await this.restartLanguageServer();
     }

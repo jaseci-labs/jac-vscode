@@ -101,7 +101,7 @@ jest.mock('../extension', () => ({
 
 function makeContext(): any {
     return {
-        globalState: {
+        workspaceState: {
             get: jest.fn().mockReturnValue(undefined),
             update: jest.fn().mockResolvedValue(undefined),
         },
@@ -139,7 +139,7 @@ describe('EnvManager', () => {
 
     describe('init()', () => {
         test('loads a valid saved environment and does not call silentAutoSelect', async () => {
-            context.globalState.get.mockReturnValue('/saved/jac');
+            context.workspaceState.get.mockReturnValue('/saved/jac');
             (envDetection.validateJacExecutable as jest.Mock).mockResolvedValue(true);
             (envVersion.getJacVersion as jest.Mock).mockResolvedValue('0.11.0');
 
@@ -151,20 +151,20 @@ describe('EnvManager', () => {
         });
 
         test('clears an invalid saved environment and falls through to silentAutoSelect', async () => {
-            context.globalState.get.mockReturnValue('/invalid/jac');
+            context.workspaceState.get.mockReturnValue('/invalid/jac');
             (envDetection.validateJacExecutable as jest.Mock).mockResolvedValue(false);
             (envDetection.discoverJacEnvironments as jest.Mock).mockResolvedValue([]);
             (vscode.window.showInformationMessage as jest.Mock).mockResolvedValue(undefined);
 
             await envManager.init();
 
-            expect(context.globalState.update).toHaveBeenCalledWith('jacEnvPath', undefined);
+            expect(context.workspaceState.update).toHaveBeenCalledWith('jacEnvPath', undefined);
             expect(envDetection.discoverJacEnvironments).toHaveBeenCalled();
             expect((envManager as any).statusBar.text).toContain('No Env');
         });
 
         test('runs silentAutoSelect when no saved environment exists', async () => {
-            context.globalState.get.mockReturnValue(undefined);
+            context.workspaceState.get.mockReturnValue(undefined);
             (envDetection.discoverJacEnvironments as jest.Mock).mockResolvedValue([]);
             (vscode.window.showInformationMessage as jest.Mock).mockResolvedValue(undefined);
 
@@ -185,7 +185,7 @@ describe('EnvManager', () => {
 
             await (envManager as any).silentAutoSelect();
 
-            expect(context.globalState.update).toHaveBeenCalledWith('jacEnvPath', '/envs/venv/bin/jac');
+            expect(context.workspaceState.update).toHaveBeenCalledWith('jacEnvPath', '/envs/venv/bin/jac');
             expect(vscode.window.showInformationMessage).not.toHaveBeenCalled();
             expect(vscode.window.showWarningMessage).not.toHaveBeenCalled();
         });
@@ -204,7 +204,7 @@ describe('EnvManager', () => {
 
             await (envManager as any).silentAutoSelect();
 
-            expect(context.globalState.update).toHaveBeenCalledWith('jacEnvPath', '/envs/new/bin/jac');
+            expect(context.workspaceState.update).toHaveBeenCalledWith('jacEnvPath', '/envs/new/bin/jac');
         });
 
         test('selects the first environment when versions are equal (stable tie-break)', async () => {
@@ -216,7 +216,7 @@ describe('EnvManager', () => {
 
             await (envManager as any).silentAutoSelect();
 
-            expect(context.globalState.update).toHaveBeenCalledWith('jacEnvPath', '/envs/first/bin/jac');
+            expect(context.workspaceState.update).toHaveBeenCalledWith('jacEnvPath', '/envs/first/bin/jac');
         });
 
         test('falls back to the first environment when none have a detectable version', async () => {
@@ -228,7 +228,7 @@ describe('EnvManager', () => {
 
             await (envManager as any).silentAutoSelect();
 
-            expect(context.globalState.update).toHaveBeenCalledWith('jacEnvPath', '/envs/a/bin/jac');
+            expect(context.workspaceState.update).toHaveBeenCalledWith('jacEnvPath', '/envs/a/bin/jac');
         });
 
         test('shows a toast with Install/Select options when no environments are found', async () => {
@@ -242,7 +242,7 @@ describe('EnvManager', () => {
                 'Install Jac',
                 'Select Manually'
             );
-            expect(context.globalState.update).not.toHaveBeenCalled();
+            expect(context.workspaceState.update).not.toHaveBeenCalled();
         });
 
         test('opens the install page when the user clicks "Install Jac"', async () => {
@@ -276,7 +276,7 @@ describe('EnvManager', () => {
             await (envManager as any).handleManualPathEntry();
 
             expect(envDetection.validateJacExecutable).toHaveBeenCalledWith('/valid/jac');
-            expect(context.globalState.update).toHaveBeenCalledWith('jacEnvPath', '/valid/jac');
+            expect(context.workspaceState.update).toHaveBeenCalledWith('jacEnvPath', '/valid/jac');
             expect(createAndStartLsp).toHaveBeenCalledTimes(1);
         });
 
@@ -297,7 +297,7 @@ describe('EnvManager', () => {
 
             await (envManager as any).handleManualPathEntry();
 
-            expect(context.globalState.update).not.toHaveBeenCalled();
+            expect(context.workspaceState.update).not.toHaveBeenCalled();
             expect(envDetection.validateJacExecutable).not.toHaveBeenCalled();
         });
 
@@ -349,7 +349,7 @@ describe('EnvManager', () => {
 
             await (envManager as any).handleFileBrowser();
 
-            expect(context.globalState.update).toHaveBeenCalledWith('jacEnvPath', '/browser/jac');
+            expect(context.workspaceState.update).toHaveBeenCalledWith('jacEnvPath', '/browser/jac');
             expect(createAndStartLsp).toHaveBeenCalledTimes(1);
         });
 
@@ -358,7 +358,7 @@ describe('EnvManager', () => {
 
             await (envManager as any).handleFileBrowser();
 
-            expect(context.globalState.update).not.toHaveBeenCalled();
+            expect(context.workspaceState.update).not.toHaveBeenCalled();
             expect(envDetection.validateJacExecutable).not.toHaveBeenCalled();
         });
 
