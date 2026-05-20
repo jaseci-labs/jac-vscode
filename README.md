@@ -1,6 +1,6 @@
 # Jac Extension
 
-This extension provides support for the [Jac](https://doc.jaseci.org) programming language. It provides syntax highlighting and leverages the LSP to provide a rich editing experience.
+This extension provides support for the [Jac](https://doc.jaseci.org) programming language. It provides syntax highlighting for `.jac` source files and `jac.toml` project manifests, and leverages the LSP to provide a rich editing experience.
 
 # Quick Start
 
@@ -72,7 +72,7 @@ Developer mode enables additional tools for extension development and debugging.
 When enabled, the following features become available:
 
 - **Restart Language Server** - Button in editor title bar to restart the LSP server
-- **Inspect Token Scopes** - Dumps all TextMate token scopes for the current Jac file to help debug syntax highlighting
+- **Inspect Token Scopes** - Dumps all token scopes for the current Jac or jac.toml file to help debug syntax highlighting
 
 # Releasing (Maintainers)
 

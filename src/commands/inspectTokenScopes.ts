@@ -40,22 +40,26 @@ export interface TokenizeResult {
 }
 
 /**
- * Tokenize content using the Jac grammar.
+ * Tokenize content using a TextMate grammar.
+ *
+ * @param scopeName  Top-level scope of the grammar (e.g. 'source.jac', 'source.jactoml').
+ *                   Defaults to 'source.jac' for backwards compatibility.
  */
 export async function tokenizeContent(
     content: string,
     grammarPath: string,
-    wasmPath: string
+    wasmPath: string,
+    scopeName: string = 'source.jac'
 ): Promise<TokenizeResult> {
     await initOnigurumaWithPath(wasmPath);
 
     const grammarData = JSON.parse(fs.readFileSync(grammarPath, 'utf-8'));
     const registry = new vsctm.Registry({
         onigLib: Promise.resolve({ createOnigScanner, createOnigString }),
-        loadGrammar: async (scopeName) => scopeName === 'source.jac' ? grammarData : null,
+        loadGrammar: async (requested) => requested === scopeName ? grammarData : null,
     });
 
-    const grammar = await registry.loadGrammar('source.jac');
+    const grammar = await registry.loadGrammar(scopeName);
     if (!grammar) throw new Error('Failed to load grammar');
 
     const byLocation = new Map<TokenLocation, TokenInfo>();
@@ -83,19 +87,34 @@ export async function tokenizeContent(
     return { byLocation, tokens };
 }
 
+/** Per-language grammar info for the inspector. */
+interface InspectableLanguage {
+    grammarFile: string;
+    scopeName: string;
+}
+
+const INSPECTABLE_LANGUAGES: Record<string, InspectableLanguage> = {
+    jac:     { grammarFile: 'jac.tmLanguage.json',     scopeName: 'source.jac' },
+    jactoml: { grammarFile: 'jactoml.tmLanguage.json', scopeName: 'source.jactoml' },
+};
+
 /**
  * Handler for the Inspect Token Scopes command.
- * Dumps all TextMate token scopes for the current Jac file.
+ * Dumps all TextMate token scopes for the current Jac or Jac TOML file.
  */
 export async function inspectTokenScopesHandler(context: vscode.ExtensionContext): Promise<void> {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
-        vscode.window.showErrorMessage('No active editor. Please open a Jac file first.');
+        vscode.window.showErrorMessage('No active editor. Please open a Jac or jac.toml file first.');
         return;
     }
 
-    if (editor.document.languageId !== 'jac') {
-        vscode.window.showErrorMessage('This command only works with Jac files.');
+    const langId = editor.document.languageId;
+    const lang = INSPECTABLE_LANGUAGES[langId];
+    if (!lang) {
+        vscode.window.showErrorMessage(
+            `This command only works with Jac (.jac) or Jac TOML (jac.toml) files. Current language: ${langId}.`
+        );
         return;
     }
 
@@ -103,15 +122,23 @@ export async function inspectTokenScopesHandler(context: vscode.ExtensionContext
     outputChannel.clear();
     outputChannel.show(true);
     outputChannel.appendLine(`Token Scopes for: ${editor.document.fileName}`);
+    outputChannel.appendLine(`Language:         ${langId}  (scope ${lang.scopeName})`);
     outputChannel.appendLine('='.repeat(80));
     outputChannel.appendLine('');
 
     try {
         const wasmPath = path.join(context.extensionPath, 'vendor', 'onig.wasm');
-        const grammarPath = path.join(context.extensionPath, 'syntaxes', 'jac.tmLanguage.json');
+        if (!fs.existsSync(wasmPath)) {
+            throw new Error(
+                `onig.wasm not found at ${wasmPath}. ` +
+                `Run "npm run copy-wasm" (or "npm run compile") before launching the extension.`
+            );
+        }
+
+        const grammarPath = path.join(context.extensionPath, 'syntaxes', lang.grammarFile);
         const text = editor.document.getText();
 
-        const { tokens } = await tokenizeContent(text, grammarPath, wasmPath);
+        const { tokens } = await tokenizeContent(text, grammarPath, wasmPath, lang.scopeName);
 
         for (const token of tokens) {
             outputChannel.appendLine(`${token.text}: ${token.line}:${token.startCol}-${token.endCol}`);

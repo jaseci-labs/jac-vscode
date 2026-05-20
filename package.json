@@ -140,6 +140,17 @@
           "light": "./assets/file-icon.svg",
           "dark": "./assets/file-icon.svg"
         }
+      },
+      {
+        "id": "jactoml",
+        "aliases": [
+          "Jac TOML",
+          "jactoml"
+        ],
+        "filenames": [
+          "jac.toml"
+        ],
+        "configuration": "./language-configuration.jactoml.json"
       }
     ],
     "grammars": [
@@ -147,6 +158,11 @@
         "language": "jac",
         "scopeName": "source.jac",
         "path": "./syntaxes/jac.tmLanguage.json"
+      },
+      {
+        "language": "jactoml",
+        "scopeName": "source.jactoml",
+        "path": "./syntaxes/jactoml.tmLanguage.json"
       }
     ],
     "debuggers": [
@@ -230,11 +246,12 @@
   "main": "./out/extension.js",
   "scripts": {
     "vscode:prepublish": "npm run package",
-    "compile": "tsc -b && npm run copy-fixtures",
+    "compile": "tsc -b && npm run copy-fixtures && npm run copy-wasm",
     "copy-fixtures": "mkdir -p out/test/fixtures && cp -r src/test/fixtures/* out/test/fixtures/",
+    "copy-wasm": "mkdir -p vendor && cp node_modules/vscode-oniguruma/release/onig.wasm vendor/onig.wasm",
     "build": "vsce",
     "watch": "tsc -b -w",
-    "package": "tsc --noEmit && esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --minify",
+    "package": "tsc --noEmit && npm run copy-wasm && esbuild src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --minify",
     "deploy": "vsce publish --yarn",
     "vsce-package": "mkdir -p build && vsce package -o build/jac.vsix",
     "test": "npm run test:unit && npm run test:integration",
