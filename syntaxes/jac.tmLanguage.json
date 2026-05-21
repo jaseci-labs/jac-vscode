@@ -1586,13 +1586,6 @@
 				}
 			]
 		},
-		"fstring-illegal-multi-brace": {
-			"patterns": [
-				{
-					"include": "#impossible"
-				}
-			]
-		},
 		"f-expression": {
 			"comment": "All valid Python expressions, except comments and line continuation",
 			"patterns": [
@@ -4737,9 +4730,6 @@
 					"include": "#fstring-guts"
 				},
 				{
-					"include": "#fstring-illegal-multi-brace"
-				},
-				{
 					"include": "#fstring-multi-brace"
 				},
 				{
@@ -4775,9 +4765,6 @@
 					"include": "#fstring-guts"
 				},
 				{
-					"include": "#fstring-illegal-multi-brace"
-				},
-				{
 					"include": "#fstring-multi-brace"
 				},
 				{
@@ -4808,9 +4795,6 @@
 			"patterns": [
 				{
 					"include": "#fstring-raw-guts"
-				},
-				{
-					"include": "#fstring-illegal-multi-brace"
 				},
 				{
 					"include": "#fstring-multi-brace"
@@ -4889,9 +4873,6 @@
 				}
 			},
 			"patterns": [
-				{
-					"include": "#fstring-illegal-multi-brace"
-				},
 				{
 					"include": "#fstring-multi-brace"
 				},
