@@ -16,6 +16,12 @@ export function getEnvManager(): EnvManager | undefined {
     return envManager;
 }
 
+export function isSyntaxHighlightingOnly(): boolean {
+  return vscode.workspace
+    .getConfiguration("jaclang-extension")
+    .get<boolean>("syntaxHighlightingOnly", false);
+}
+
 // Create and start LSP Manager if not already running
 export async function createAndStartLsp(
   envManager: EnvManager,
@@ -37,18 +43,24 @@ export async function activate(context: vscode.ExtensionContext) {
   try {
     envManager = new EnvManager(context);
     registerAllCommands(context, envManager);
-    await envManager.init();
+
+    const highlightOnly = isSyntaxHighlightingOnly();
+    if (!highlightOnly) {
+      await envManager.init();
+    }
 
     setupVisualDebuggerWebview(context);
 
-    const jacPath = envManager.getJacPath();
-    const isJacAvailable = await validateJacExecutable(jacPath); // Check if Jac is available before starting LSP
+    if (!highlightOnly) {
+      const jacPath = envManager.getJacPath();
+      const isJacAvailable = await validateJacExecutable(jacPath); // Check if Jac is available before starting LSP
 
-    if (isJacAvailable) {
-      try {
-        await createAndStartLsp(envManager, context);
-      } catch (error) {
-        console.error("LSP failed to start during activation:", error);
+      if (isJacAvailable) {
+        try {
+          await createAndStartLsp(envManager, context);
+        } catch (error) {
+          console.error("LSP failed to start during activation:", error);
+        }
       }
     }
 
