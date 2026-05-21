@@ -32,6 +32,9 @@
 					"include": "#has"
 				},
 				{
+					"include": "#accessor"
+				},
+				{
 					"include": "#ability"
 				},
 				{
@@ -263,6 +266,42 @@
 						{
 							"name": "entity.name.function.jac",
 							"match": "(?x)\n  \\b ([[:alpha:]_]\\w*) \\b\n"
+						}
+					]
+				}
+			]
+		},
+		"accessor": {
+			"patterns": [
+				{
+					"name": "meta.function.accessor.jac",
+					"begin": "(?x)\\b(?<!\\.)(getter|setter|deleter)\\b(?=\\s*(\\(|->|{|;|\\n))",
+					"end": "(?=\\)|{)|;",
+					"beginCaptures": {
+						"1": {
+							"name": "storage.type.function.jac"
+						}
+					},
+					"endCaptures": {
+						"1": {
+							"name": "punctuation.section.function.begin.jac"
+						}
+					},
+					"patterns": [
+						{
+							"include": "#comments"
+						},
+						{
+							"include": "#parameters"
+						},
+						{
+							"include": "#builtin-types"
+						},
+						{
+							"include": "#statement-keyword"
+						},
+						{
+							"include": "#string"
 						}
 					]
 				}

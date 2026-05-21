@@ -40,6 +40,7 @@ const semErrContent       = fs.readFileSync(path.join(EXAMPLES_DIR, 'sem_err.jac
 const accessModContent    = fs.readFileSync(path.join(EXAMPLES_DIR, 'access_modifiers.jac'), 'utf-8');
 const lambdaFstringContent = fs.readFileSync(path.join(EXAMPLES_DIR, 'lambda_fstring.jac'), 'utf-8');
 const overrideFnContent   = fs.readFileSync(path.join(EXAMPLES_DIR, 'override_fn.jac'), 'utf-8');
+const propAccessorsContent = fs.readFileSync(path.join(EXAMPLES_DIR, 'property_accessors.jac'), 'utf-8');
 
 /**
  * Helper to assert a token has expected text and contains expected scopes
@@ -1087,5 +1088,31 @@ describe('override_fn.jac', () => {
     test('area function name after override can gets entity.name.function.jac (line 23)', () => {
         // line 23: "    override can area() -> float {"
         expectToken(result, 23, 18, 22, 'area', ['source.jac', 'meta.function.jac', 'entity.name.function.jac']);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// property_accessors.jac — getter / setter / deleter
+// ---------------------------------------------------------------------------
+describe('property_accessors.jac', () => {
+    let result: TokenizeResult;
+
+    beforeAll(async () => {
+        result = await tokenizeContent(propAccessorsContent, GRAMMAR_PATH, WASM_PATH);
+    });
+
+    test('getter keyword inside accessor block (line 22: "        getter { ... }")', () => {
+        expectToken(result, 22, 9, 15, 'getter', ['source.jac', 'meta.function.accessor.jac', 'storage.type.function.jac']);
+    });
+
+    test('setter parameter `value` is highlighted like a def parameter (line 17)', () => {
+        // line 17: "        setter(value: str) { self._color = value; }"
+        // This is the whole reason #accessor wraps in meta.function.accessor.jac
+        // instead of just adding to statement-keyword.
+        expectToken(result, 17, 16, 21, 'value', ['meta.function.parameters.jac', 'variable.parameter.function.language.jac']);
+    });
+
+    test('signature-only `deleter;` (line 29)', () => {
+        expectToken(result, 29, 9, 16, 'deleter', ['source.jac', 'meta.function.accessor.jac', 'storage.type.function.jac']);
     });
 });
