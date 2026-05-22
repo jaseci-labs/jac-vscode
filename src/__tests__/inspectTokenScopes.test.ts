@@ -41,6 +41,7 @@ const accessModContent    = fs.readFileSync(path.join(EXAMPLES_DIR, 'access_modi
 const lambdaFstringContent = fs.readFileSync(path.join(EXAMPLES_DIR, 'lambda_fstring.jac'), 'utf-8');
 const overrideFnContent   = fs.readFileSync(path.join(EXAMPLES_DIR, 'override_fn.jac'), 'utf-8');
 const propAccessorsContent = fs.readFileSync(path.join(EXAMPLES_DIR, 'property_accessors.jac'), 'utf-8');
+const slotKeywordsContent = fs.readFileSync(path.join(EXAMPLES_DIR, 'slot_keywords.jac'), 'utf-8');
 
 /**
  * Helper to assert a token has expected text and contains expected scopes
@@ -1114,5 +1115,31 @@ describe('property_accessors.jac', () => {
 
     test('signature-only `deleter;` (line 29)', () => {
         expectToken(result, 29, 9, 16, 'deleter', ['source.jac', 'meta.function.accessor.jac', 'storage.type.function.jac']);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// slot_keywords.jac — `skip;` (KW_SKIP) and `try {} awaiting {}` (KW_AWAITING)
+// ---------------------------------------------------------------------------
+describe('slot_keywords.jac', () => {
+    let result: TokenizeResult;
+    const flow = ['source.jac', 'keyword.control.flow.jac'];
+
+    beforeAll(async () => {
+        result = await tokenizeContent(slotKeywordsContent, GRAMMAR_PATH, WASM_PATH);
+    });
+
+    test('skip keyword is control flow (lines 21, 24)', () => {
+        expectToken(result, 21, 21, 25, 'skip', flow);
+        expectToken(result, 24, 21, 25, 'skip', flow);
+    });
+
+    test('for keyword in slot after skip (line 25)', () => {
+        expectToken(result, 25, 18, 21, 'for', flow);
+    });
+
+    test('try / awaiting clause (lines 34, 36)', () => {
+        expectToken(result, 34, 18, 21, 'try', flow);
+        expectToken(result, 36, 19, 27, 'awaiting', flow);
     });
 });
