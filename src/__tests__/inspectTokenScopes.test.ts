@@ -42,6 +42,7 @@ const lambdaFstringContent = fs.readFileSync(path.join(EXAMPLES_DIR, 'lambda_fst
 const overrideFnContent   = fs.readFileSync(path.join(EXAMPLES_DIR, 'override_fn.jac'), 'utf-8');
 const propAccessorsContent = fs.readFileSync(path.join(EXAMPLES_DIR, 'property_accessors.jac'), 'utf-8');
 const slotKeywordsContent = fs.readFileSync(path.join(EXAMPLES_DIR, 'slot_keywords.jac'), 'utf-8');
+const arrowReproContent   = fs.readFileSync(path.join(EXAMPLES_DIR, 'arrow_repro.jac'), 'utf-8');
 
 /**
  * Helper to assert a token has expected text and contains expected scopes
@@ -1141,5 +1142,54 @@ describe('slot_keywords.jac', () => {
     test('try / awaiting clause (lines 34, 36)', () => {
         expectToken(result, 34, 18, 21, 'try', flow);
         expectToken(result, 36, 19, 27, 'awaiting', flow);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// arrow_repro.jac — return-annotation -> and graph-traversal -> / --> / <-
+// ---------------------------------------------------------------------------
+describe('arrow_repro.jac', () => {
+    let result: TokenizeResult;
+    const anno  = ['source.jac', 'meta.function.jac', 'punctuation.separator.annotation.result.jac'];
+    const graph = ['source.jac', 'keyword.operator.graph.jac'];
+
+    beforeAll(async () => {
+        result = await tokenizeContent(arrowReproContent, GRAMMAR_PATH, WASM_PATH);
+    });
+
+    describe('return-type -> annotations are correctly scoped', () => {
+        test('-> in def to_simple_view (line 15)', () => {
+            // def to_simple_view -> ItemView {
+            expectToken(result, 15, 24, 26, '->', anno);
+        });
+
+        test('-> in def to_complex_view (line 19)', () => {
+            // def to_complex_view -> CollectionView {
+            expectToken(result, 19, 25, 27, '->', anno);
+        });
+
+        test('-> in def to_view after sort(key=lambda…) — regression: context must not leak (line 34)', () => {
+            // sort(key=lambda t: ItemView : t.name, reverse=True) on line 21 used to
+            // leave function-arguments open, causing -> on line 34 to be invalid.
+            // def to_view -> ItemView {
+            expectToken(result, 34, 17, 19, '->', anno);
+        });
+
+        test('-> in def connected_count (line 43)', () => {
+            // def connected_count -> int {
+            expectToken(result, 43, 25, 27, '->', anno);
+        });
+    });
+
+    describe('graph traversal -> and --> are keyword.operator.graph.jac, not invalid', () => {
+        test('-> inside len([edge self->...]) is graph operator (line 45)', () => {
+            // is_linked: bool = len([self]) > 0 and len([edge self->[?:TraversalNode]]) > 0;
+            expectToken(result, 45, 61, 63, '->', graph);
+        });
+
+        test('--> inside len([self-->...]) is graph operator (line 46)', () => {
+            // return len([self-->[?:TraversalNode]]);
+            expectToken(result, 46, 25, 28, '-->', graph);
+        });
     });
 });
