@@ -315,7 +315,7 @@
 				{
 					"name": "meta.property.jac",
 					"begin": "(?x)\\b(has)\\b(?=\\s*[[:alpha:]_]\\w*|\\s*({|;|\\(||\\n))",
-					"end": "(?=\\)|{)|;|by",
+					"end": "(?=\\)|{)|;",
 					"beginCaptures": {
 						"1": {
 							"name": "storage.type.function.jac"
@@ -333,6 +333,17 @@
 						{
 							"name": "punctuation.separator.jac",
 							"match": ","
+						},
+						{
+							"match": "(?x)\\b(by)\\b\\s*([[:alpha:]_]\\w*)?",
+							"captures": {
+								"1": {
+									"name": "keyword.control.flow.jac"
+								},
+								"2": {
+									"name": "variable.other.jac"
+								}
+							}
 						},
 						{
 							"include": "#general"

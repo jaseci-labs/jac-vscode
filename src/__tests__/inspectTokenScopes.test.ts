@@ -43,6 +43,7 @@ const overrideFnContent   = fs.readFileSync(path.join(EXAMPLES_DIR, 'override_fn
 const propAccessorsContent = fs.readFileSync(path.join(EXAMPLES_DIR, 'property_accessors.jac'), 'utf-8');
 const slotKeywordsContent = fs.readFileSync(path.join(EXAMPLES_DIR, 'slot_keywords.jac'), 'utf-8');
 const arrowReproContent   = fs.readFileSync(path.join(EXAMPLES_DIR, 'arrow_repro.jac'), 'utf-8');
+const byPostinitContent   = fs.readFileSync(path.join(EXAMPLES_DIR, 'by_postinit.jac'), 'utf-8');
 
 /**
  * Helper to assert a token has expected text and contains expected scopes
@@ -1190,6 +1191,67 @@ describe('arrow_repro.jac', () => {
         test('--> inside len([self-->...]) is graph operator (line 46)', () => {
             // return len([self-->[?:TraversalNode]]);
             expectToken(result, 46, 25, 28, '-->', graph);
+        });
+    });
+});
+
+// ---------------------------------------------------------------------------
+// by_postinit.jac — `by` keyword and the initializer after it inside `has`
+// ---------------------------------------------------------------------------
+describe('by_postinit.jac', () => {
+    let result: TokenizeResult;
+    const kw   = ['source.jac', 'meta.property.jac', 'keyword.control.flow.jac'];
+    const init = ['source.jac', 'meta.property.jac', 'variable.other.jac'];
+
+    beforeAll(async () => {
+        result = await tokenizeContent(byPostinitContent, GRAMMAR_PATH, WASM_PATH);
+    });
+
+    describe('has msg: str by postinit; inside obj (line 2)', () => {
+        test('by is a control-flow keyword, not unscoped', () => {
+            expectToken(result, 2, 18, 20, 'by', kw);
+        });
+
+        test('postinit after by is a variable, not a special self-variable', () => {
+            const token = getTokenByLocation(result, 2, 21, 29);
+            expect(token).toBeDefined();
+            expect(token!.text).toBe('postinit');
+            expect(token!.scopes).toContain('variable.other.jac');
+            // regression: must NOT be mis-scoped as the special self/init variable
+            expect(token!.scopes).not.toContain('variable.language.special.self.jac');
+        });
+    });
+
+    describe('multi-field has with several by clauses (lines 9-10)', () => {
+        test('by on first field', () => {
+            expectToken(result, 9, 18, 20, 'by', kw);
+        });
+
+        test('postinit on first field', () => {
+            expectToken(result, 9, 21, 29, 'postinit', init);
+        });
+
+        test('by on second field', () => {
+            expectToken(result, 10, 19, 21, 'by', kw);
+        });
+
+        test('postinit on second field', () => {
+            expectToken(result, 10, 22, 30, 'postinit', init);
+        });
+
+        test('field without by still highlights its default value (line 11)', () => {
+            // msg3: int = 90;  — no regression to plain fields
+            expectToken(result, 11, 21, 23, '90', ['source.jac', 'meta.property.jac', 'constant.numeric.dec.jac']);
+        });
+    });
+
+    describe('has ... by postinit inside impl block (line 18)', () => {
+        test('by keyword', () => {
+            expectToken(result, 18, 18, 20, 'by', kw);
+        });
+
+        test('postinit initializer', () => {
+            expectToken(result, 18, 21, 29, 'postinit', init);
         });
     });
 });
