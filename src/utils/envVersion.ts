@@ -1,50 +1,62 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import * as os from 'os';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 
 const execFileAsync = promisify(execFile);
 
-// Fast path: read version from ~/.cache/jac/rt/*/site/jaclang-*.dist-info (~0.002s).
-async function getJacVersionFromCache(): Promise<string | undefined> {
-    const cacheBase = process.env.XDG_CACHE_HOME ?? path.join(os.homedir(), '.cache');
-    const rtDir = path.join(cacheBase, 'jac', 'rt');
+// Matches the version on `jac --version` output, e.g. "Version:  0.30.2".
+const VERSION_RE = /Version:\s*([0-9]+\.[0-9]+\.[0-9]+(?:[.\-+][0-9A-Za-z.\-]+)?)/;
 
-    let hashDirs: string[];
-    try { hashDirs = await fs.readdir(rtDir); }
-    catch { return undefined; }
-
-    const versions: string[] = [];
-
-    for (const hashDir of hashDirs) {
-        const siteDir = path.join(rtDir, hashDir, 'site');
-        let entries: string[];
-        try { entries = await fs.readdir(siteDir); }
-        catch { continue; }
-
-        const distInfo = entries.find(e => e.startsWith('jaclang-') && e.endsWith('.dist-info'));
-        if (distInfo) {
-            versions.push(distInfo.slice('jaclang-'.length, -'.dist-info'.length));
-        }
-    }
-
-    // Ambiguous if multiple distinct versions (e.g. dev + release) — fall back to subprocess.
-    const unique = [...new Set(versions)];
-    return unique.length === 1 ? unique[0] : undefined;
-}
-
-// Slow fallback (~1.8s): only runs if cache is missing (first-ever launch).
-async function getJacVersionFromBinary(jacPath: string): Promise<string | undefined> {
+// Fast path: scan THIS env's own site-packages for a jaclang-*.dist-info (~1ms, no subprocess).
+// Keyed on the given jacPath so each env reports its own version. A single self-contained
+// binary has no sibling dist-info, so this returns undefined and the subprocess path is used.
+async function getJacVersionFromDistInfo(jacPath: string): Promise<string | undefined> {
     try {
-        const { stdout } = await execFileAsync(jacPath, ['--version'], { timeout: 5000 });
-        return stdout.match(/Version:\s+([\d.]+)/)?.[1];
+        const envRoot = path.dirname(path.dirname(jacPath));
+
+        // Only trust the dist-info scan inside a real venv/conda env (marked by pyvenv.cfg).
+        // A single binary at e.g. ~/.local/bin shares its prefix with unrelated pip installs,
+        // so its sibling lib/ dist-info would be a different, stale jaclang. Skip it there.
+        try { await fs.access(path.join(envRoot, 'pyvenv.cfg')); }
+        catch { return undefined; }
+
+        const libDir = path.join(envRoot, 'lib');
+
+        let libEntries: string[];
+        try { libEntries = await fs.readdir(libDir); }
+        catch { return undefined; }
+
+        for (const libEntry of libEntries.filter(entry => entry.startsWith('python'))) {
+            for (const pkgDir of ['site-packages', 'dist-packages']) {
+                try {
+                    const sitePackages = path.join(libDir, libEntry, pkgDir);
+                    const siteEntries  = await fs.readdir(sitePackages);
+                    const distInfoDir  = siteEntries.find(
+                        entry => entry.startsWith('jaclang-') && entry.endsWith('.dist-info')
+                    );
+                    if (distInfoDir) {
+                        return distInfoDir.slice('jaclang-'.length, -'.dist-info'.length);
+                    }
+                } catch { continue; }
+            }
+        }
+        return undefined;
     } catch { return undefined; }
 }
 
-// Cache first, subprocess fallback if cache is missing.
+// Authoritative: ask the specific binary directly. Works for any install (single binary or venv).
+async function getJacVersionFromBinary(jacPath: string): Promise<string | undefined> {
+    try {
+        const { stdout, stderr } = await execFileAsync(jacPath, ['--version'], { timeout: 5000 });
+        return VERSION_RE.exec(`${stdout}\n${stderr}`)?.[1];
+    } catch { return undefined; }
+}
+
+// Resolve the version for THIS jacPath. Per-env dist-info first (fast, no subprocess),
+// then the binary itself. Both are keyed on jacPath so each env reports its own version.
 export async function getJacVersion(jacPath: string): Promise<string | undefined> {
-    return (await getJacVersionFromCache()) ?? (await getJacVersionFromBinary(jacPath));
+    return (await getJacVersionFromDistInfo(jacPath)) ?? (await getJacVersionFromBinary(jacPath));
 }
 
 // Compares two semver strings. Returns positive if a > b, negative if a < b, 0 if equal.
