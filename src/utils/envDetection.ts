@@ -128,19 +128,9 @@ async function findInCondaEnvs(): Promise<string[]> {
     return jacResults.filter((result): result is string => result !== null);
 }
 
-// Locator 3: Finds jac in workspace — checks .jac/venv first (new binary model),
-// then falls back to walking for old-style .venv folders (backward compat).
+// Locator 3: Finds venvs in workspace
 async function findInWorkspace(workspaceRoot: string): Promise<string[]> {
-    // .jac/venv is where `jac install` puts plugins in the new binary model.
-    // It contains a real jac binary that the extension can use directly.
-    const jacVenv = path.join(workspaceRoot, '.jac', 'venv');
-    const jacInPluginVenv = await getJacInEnv(jacVenv);
-    const pluginResult = jacInPluginVenv ? [jacInPluginVenv] : [];
-
-    // Also walk for old-style .venv folders (pip install jaclang, backward compat)
-    const venvResults = await walkForVenvs(workspaceRoot, VENV_WALK_DEPTH);
-
-    return [...pluginResult, ...venvResults];
+    return walkForVenvs(workspaceRoot, VENV_WALK_DEPTH);
 }
 
 // Locator 4: Finds venvs in home directory stores
@@ -187,7 +177,7 @@ export async function discoverJacEnvironments(workspaceRoots: string[]): Promise
         }
     };
 
-    // Priority: workspace (.jac/venv + .venv) > default binary > PATH > conda > home venvs
+    // Priority: workspace > default binary (~/.local/bin) > PATH > conda > home venvs
     workspaceEnvs.forEach(envPath => add(envPath, 'workspace'));
     defaultBinaries.forEach(envPath => add(envPath, 'global'));
     pathEnvs.forEach(envPath => add(envPath, 'global'));
