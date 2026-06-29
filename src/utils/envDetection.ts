@@ -64,11 +64,10 @@ async function walkForVenvs(baseDir: string, depth: number): Promise<string[]> {
 
 // ── Environment Locators ─────────────────────────────────────────────────────
 
-// Locator 0: Checks ~/.local/bin/jac directly (no PATH dependency).
-// Catches the case where ~/.local/bin isn't on PATH yet (common right after install).
+// Locator 0: Checks ~/.local/bin/jac directly — catches fresh installs where ~/.local/bin isn't on PATH yet.
 async function findDefaultBinary(): Promise<string[]> {
     if (process.platform === 'win32') return [];
-    const jacPath = path.join(os.homedir(), '.local', 'bin', 'jac'); // Mac/Linux only — Windows returns early above
+    const jacPath = path.join(os.homedir(), '.local', 'bin', 'jac');
     return (await fileExists(jacPath)) ? [jacPath] : [];
 }
 

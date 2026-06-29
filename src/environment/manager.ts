@@ -92,12 +92,11 @@ export class EnvManager {
     getPythonPath(): string {
         const pythonExe = process.platform === 'win32' ? 'python.exe' : 'python';
         if (this.jacPath) {
-            // Binary install: Python is embedded inside jac — no sibling python in bin/.
-            // Applies to ~/.local/bin/jac (curl installer default location).
+            // ~/.local/bin/jac is the binary installer — Python is embedded, no sibling in bin/.
             const isBinaryInstall = this.jacPath.includes(`${path.sep}.local${path.sep}bin${path.sep}`);
             if (isBinaryInstall) { return pythonExe; }
 
-            // Legacy venv (pip install jaclang): python sits next to jac in bin/.
+            // Legacy pip venv: python sits next to jac in bin/.
             return path.join(path.dirname(this.jacPath), pythonExe);
         }
         return pythonExe;
