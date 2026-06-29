@@ -140,6 +140,33 @@ async function findInHome(): Promise<string[]> {
     return results.flat();
 }
 
+// Locator 5: Finds the single self-contained native binary in well-known install locations
+// (PATH-independent, so it is found even when not on PATH).
+async function findSingleBinaryInstalls(): Promise<string[]> {
+    const isWin = process.platform === 'win32';
+    const candidates: string[] = [];
+
+    if (isWin) {
+        const localAppData = process.env.LOCALAPPDATA || '';
+        if (localAppData) {
+            candidates.push(path.join(localAppData, 'Programs', 'jac', 'jac.exe'));
+            candidates.push(path.join(localAppData, 'jac', 'bin', 'jac.exe'));
+        }
+    } else {
+        const homeDir = process.env.HOME || process.env.USERPROFILE || '';
+        if (homeDir) {
+            candidates.push(path.join(homeDir, '.local', 'bin', 'jac'));
+        }
+        candidates.push('/opt/homebrew/bin/jac'); // macOS arm brew
+        candidates.push('/usr/local/bin/jac');
+    }
+
+    const results = await Promise.all(
+        candidates.map(async candidate => (await fileExists(candidate)) ? candidate : null)
+    );
+    return results.filter((candidate): candidate is string => candidate !== null);
+}
+
 // ── Main Discovery ───────────────────────────────────────────────────────────
 
 export interface JacEnvironment {
@@ -149,8 +176,9 @@ export interface JacEnvironment {
 
 // Discovers all Jac environments on-demand (~10-15ms)
 export async function discoverJacEnvironments(workspaceRoots: string[]): Promise<JacEnvironment[]> {
-    const [pathEnvs, condaEnvs, homeEnvs, ...workspaceResults] = await Promise.all([
+    const [pathEnvs, singleBinaryEnvs, condaEnvs, homeEnvs, ...workspaceResults] = await Promise.all([
         findInPath(),
+        findSingleBinaryInstalls(),
         findInCondaEnvs(),
         findInHome(),
         ...workspaceRoots.map(findInWorkspace)
@@ -167,9 +195,10 @@ export async function discoverJacEnvironments(workspaceRoots: string[]): Promise
         }
     };
 
-    // Priority: workspace > global > conda > home venvs
+    // Priority: workspace > global (PATH + single-binary installs) > conda > home venvs
     workspaceEnvs.forEach(envPath => add(envPath, 'workspace'));
     pathEnvs.forEach(envPath => add(envPath, 'global'));
+    singleBinaryEnvs.forEach(envPath => add(envPath, 'global'));
     condaEnvs.forEach(envPath => add(envPath, 'conda'));
     homeEnvs.forEach(envPath => add(envPath, 'venv'));
 

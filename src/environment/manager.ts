@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
 import * as path from 'path';
 import { discoverJacEnvironments, validateJacExecutable, JacEnvironment } from '../utils/envDetection';
 import { getJacVersion, compareVersions } from '../utils/envVersion';
@@ -93,7 +94,11 @@ export class EnvManager {
         if (this.jacPath) {
             const jacDir = path.dirname(this.jacPath);
             const pythonExe = process.platform === 'win32' ? 'python.exe' : 'python';
-            return path.join(jacDir, pythonExe);
+            const sibling = path.join(jacDir, pythonExe);
+            // Genuine venv/conda installs ship a sibling python; use it when present.
+            if (fs.existsSync(sibling)) { return sibling; }
+            // Single self-contained binary has no sibling python - the binary IS the interpreter host.
+            return this.jacPath;
         }
         return process.platform === 'win32' ? 'python.exe' : 'python';
     }

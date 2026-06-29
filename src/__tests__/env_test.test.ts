@@ -415,12 +415,21 @@ describe('EnvManager', () => {
     });
 
     describe('getPythonPath()', () => {
-        test('returns python in the same directory as the configured jac executable', () => {
+        test('returns the sibling python when one exists on disk (venv/conda)', () => {
+            const existsSpy = jest.spyOn(require('fs'), 'existsSync').mockReturnValue(true);
             (envManager as any).jacPath = '/home/user/.venv/bin/jac';
             const expected = process.platform === 'win32'
                 ? '/home/user/.venv/bin/python.exe'
                 : '/home/user/.venv/bin/python';
             expect(envManager.getPythonPath()).toBe(expected);
+            existsSpy.mockRestore();
+        });
+
+        test('returns the jac executable itself when no sibling python exists (single binary)', () => {
+            const existsSpy = jest.spyOn(require('fs'), 'existsSync').mockReturnValue(false);
+            (envManager as any).jacPath = '/home/user/.local/bin/jac';
+            expect(envManager.getPythonPath()).toBe('/home/user/.local/bin/jac');
+            existsSpy.mockRestore();
         });
 
         test('falls back to the platform default when no path is configured', () => {
