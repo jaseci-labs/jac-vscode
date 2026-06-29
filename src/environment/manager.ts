@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
 import * as path from 'path';
 import { discoverJacEnvironments, validateJacExecutable, JacEnvironment } from '../utils/envDetection';
 import { getJacVersion, compareVersions } from '../utils/envVersion';
@@ -92,12 +93,13 @@ export class EnvManager {
     getPythonPath(): string {
         const pythonExe = process.platform === 'win32' ? 'python.exe' : 'python';
         if (this.jacPath) {
-            // ~/.local/bin/jac is the binary installer — Python is embedded, no sibling in bin/.
-            const isBinaryInstall = this.jacPath.includes(`${path.sep}.local${path.sep}bin${path.sep}`);
-            if (isBinaryInstall) { return pythonExe; }
+            // Legacy pip venv ships a sibling python in bin/; use it when present.
+            const sibling = path.join(path.dirname(this.jacPath), pythonExe);
+            if (fs.existsSync(sibling)) { return sibling; }
 
-            // Legacy pip venv: python sits next to jac in bin/.
-            return path.join(path.dirname(this.jacPath), pythonExe);
+            // Single binary (any install location - .local, brew, /usr/local) has
+            // Python embedded, so there is no sibling. Fall back to bare python.
+            return pythonExe;
         }
         return pythonExe;
     }

@@ -1,10 +1,17 @@
 import { EnvManager } from '../environment/manager';
+import * as fs from 'fs';
 import * as vscode from 'vscode';
 import * as envDetection from '../utils/envDetection';
 import * as envVersion from '../utils/envVersion';
 import { getLspManager, createAndStartLsp } from '../extension';
 
 // ── Module Mocks ──────────────────────────────────────────────────────────────
+
+// Keep real fs behavior, but make existsSync overridable for getPythonPath tests.
+jest.mock('fs', () => ({
+    ...jest.requireActual('fs'),
+    existsSync: jest.fn(jest.requireActual('fs').existsSync),
+}));
 
 jest.mock('vscode-languageclient/node', () => ({
     LanguageClient: class {
@@ -415,12 +422,21 @@ describe('EnvManager', () => {
     });
 
     describe('getPythonPath()', () => {
-        test('returns python in the same directory as the configured jac executable', () => {
+        test('returns the sibling python when it exists (venv/conda install)', () => {
+            (fs.existsSync as jest.Mock).mockReturnValue(true);
             (envManager as any).jacPath = '/home/user/.venv/bin/jac';
             const expected = process.platform === 'win32'
                 ? '/home/user/.venv/bin/python.exe'
                 : '/home/user/.venv/bin/python';
             expect(envManager.getPythonPath()).toBe(expected);
+            (fs.existsSync as jest.Mock).mockReset();
+        });
+
+        test('returns bare python when no sibling exists (single binary install)', () => {
+            (fs.existsSync as jest.Mock).mockReturnValue(false);
+            (envManager as any).jacPath = '/home/user/.local/bin/jac';
+            expect(envManager.getPythonPath()).toBe(process.platform === 'win32' ? 'python.exe' : 'python');
+            (fs.existsSync as jest.Mock).mockReset();
         });
 
         test('falls back to the platform default when no path is configured', () => {
