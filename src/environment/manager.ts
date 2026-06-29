@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
 import * as path from 'path';
 import { discoverJacEnvironments, validateJacExecutable, JacEnvironment } from '../utils/envDetection';
 import { getJacVersion, compareVersions } from '../utils/envVersion';
@@ -90,12 +91,17 @@ export class EnvManager {
     }
 
     getPythonPath(): string {
+        const pythonExe = process.platform === 'win32' ? 'python.exe' : 'python';
         if (this.jacPath) {
-            const jacDir = path.dirname(this.jacPath);
-            const pythonExe = process.platform === 'win32' ? 'python.exe' : 'python';
-            return path.join(jacDir, pythonExe);
+            // Legacy pip venv ships a sibling python in bin/; use it when present.
+            const sibling = path.join(path.dirname(this.jacPath), pythonExe);
+            if (fs.existsSync(sibling)) { return sibling; }
+
+            // Single binary (any install location - .local, brew, /usr/local) has
+            // Python embedded, so there is no sibling. Fall back to bare python.
+            return pythonExe;
         }
-        return process.platform === 'win32' ? 'python.exe' : 'python';
+        return pythonExe;
     }
 
     getStatusBar(): vscode.StatusBarItem {
@@ -253,7 +259,7 @@ export class EnvManager {
         const typeLabel = envType.charAt(0).toUpperCase() + envType.slice(1);
 
         const versionStr = version ? `Jac ${version}` : 'Jac';
-        const namePart = envName ? ` (${envName})` : '';
+        const namePart = envType === 'global' ? '' : envName ? ` (${envName})` : '';
         const label = `${isActive ? '$(check) ' : ''}${versionStr}${namePart}`;
         const description = `${this.formatPath(envPath)}  ·  ${typeLabel}`;
 

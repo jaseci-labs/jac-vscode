@@ -1,6 +1,7 @@
 import * as fs from 'fs/promises';
 import type { Dirent } from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -62,6 +63,26 @@ async function walkForVenvs(baseDir: string, depth: number): Promise<string[]> {
 }
 
 // ── Environment Locators ─────────────────────────────────────────────────────
+
+// Locator 0: Checks well-known single-binary install locations directly - catches
+// fresh installs before the install dir is on PATH. Cross-platform.
+async function findDefaultBinary(): Promise<string[]> {
+    const home = os.homedir();
+    const candidates = process.platform === 'win32'
+        ? [
+            path.join(process.env.LOCALAPPDATA ?? path.join(home, 'AppData', 'Local'), 'Programs', 'jac', 'jac.exe'),
+            path.join(process.env.LOCALAPPDATA ?? path.join(home, 'AppData', 'Local'), 'jac', 'bin', 'jac.exe'),
+        ]
+        : [
+            path.join(home, '.local', 'bin', 'jac'),
+            '/opt/homebrew/bin/jac', // macOS arm brew
+            '/usr/local/bin/jac',
+        ];
+    const results = await Promise.all(
+        candidates.map(async c => (await fileExists(c)) ? c : null)
+    );
+    return results.filter((c): c is string => c !== null);
+}
 
 // Locator 1: Scans $PATH for jac
 async function findInPath(): Promise<string[]> {
@@ -149,7 +170,8 @@ export interface JacEnvironment {
 
 // Discovers all Jac environments on-demand (~10-15ms)
 export async function discoverJacEnvironments(workspaceRoots: string[]): Promise<JacEnvironment[]> {
-    const [pathEnvs, condaEnvs, homeEnvs, ...workspaceResults] = await Promise.all([
+    const [defaultBinaries, pathEnvs, condaEnvs, homeEnvs, ...workspaceResults] = await Promise.all([
+        findDefaultBinary(),
         findInPath(),
         findInCondaEnvs(),
         findInHome(),
@@ -167,8 +189,9 @@ export async function discoverJacEnvironments(workspaceRoots: string[]): Promise
         }
     };
 
-    // Priority: workspace > global > conda > home venvs
+    // Priority: workspace > default binary (~/.local/bin) > PATH > conda > home venvs
     workspaceEnvs.forEach(envPath => add(envPath, 'workspace'));
+    defaultBinaries.forEach(envPath => add(envPath, 'global'));
     pathEnvs.forEach(envPath => add(envPath, 'global'));
     condaEnvs.forEach(envPath => add(envPath, 'conda'));
     homeEnvs.forEach(envPath => add(envPath, 'venv'));
