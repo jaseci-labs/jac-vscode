@@ -127,10 +127,9 @@ export class EnvManager {
             type EnvItem = vscode.QuickPickItem & { envPath?: string };
 
             const quickPick = vscode.window.createQuickPick<EnvItem>();
-            const currentVersion = this.jacPath ? await getJacVersion(this.jacPath) : undefined;
             const currentEnvName = this.jacPath ? this.getEnvName(this.jacPath) : undefined;
-            const currentLabel = currentVersion && currentEnvName
-                ? `Jac Environment · currently: ${currentVersion} (${currentEnvName})`
+            const currentLabel = this.jacVersion && currentEnvName
+                ? `Jac Environment · currently: ${this.jacVersion} (${currentEnvName})`
                 : 'Select Jac Environment';
             quickPick.title = currentLabel;
             quickPick.placeholder = 'Searching for Jac environments...';

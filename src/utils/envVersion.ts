@@ -1,5 +1,6 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import * as os from 'os';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 
@@ -45,7 +46,26 @@ async function getJacVersionFromDistInfo(jacPath: string): Promise<string | unde
     } catch { return undefined; }
 }
 
-// Authoritative: ask the specific binary directly. Works for any install (single binary or venv).
+// Middle path: scan ~/.cache/jac/rt/*/site/jaclang-*.dist-info — no subprocess, works for binary installs.
+async function getJacVersionFromCache(): Promise<string | undefined> {
+    const cacheBase = process.env.XDG_CACHE_HOME ?? path.join(os.homedir(), '.cache');
+    const rtDir = path.join(cacheBase, 'jac', 'rt');
+    let hashDirs: string[];
+    try { hashDirs = await fs.readdir(rtDir); }
+    catch { return undefined; }
+    const versions: string[] = [];
+    for (const hashDir of hashDirs) {
+        let entries: string[];
+        try { entries = await fs.readdir(path.join(rtDir, hashDir, 'site')); }
+        catch { continue; }
+        const distInfo = entries.find(e => e.startsWith('jaclang-') && e.endsWith('.dist-info'));
+        if (distInfo) versions.push(distInfo.slice('jaclang-'.length, -'.dist-info'.length));
+    }
+    const unique = [...new Set(versions)];
+    return unique.length === 1 ? unique[0] : undefined;
+}
+
+// Last resort: ask the specific binary directly (~1.8s, may be slow on cold cache).
 async function getJacVersionFromBinary(jacPath: string): Promise<string | undefined> {
     try {
         const { stdout, stderr } = await execFileAsync(jacPath, ['--version'], { timeout: 5000 });
@@ -53,10 +73,9 @@ async function getJacVersionFromBinary(jacPath: string): Promise<string | undefi
     } catch { return undefined; }
 }
 
-// Resolve the version for THIS jacPath. Per-env dist-info first (fast, no subprocess),
-// then the binary itself. Both are keyed on jacPath so each env reports its own version.
+// dist-info (venvs) → cache scan (binary install, no subprocess) → subprocess (last resort).
 export async function getJacVersion(jacPath: string): Promise<string | undefined> {
-    return (await getJacVersionFromDistInfo(jacPath)) ?? (await getJacVersionFromBinary(jacPath));
+    return (await getJacVersionFromDistInfo(jacPath)) ?? (await getJacVersionFromCache()) ?? (await getJacVersionFromBinary(jacPath));
 }
 
 // Compares two semver strings. Returns positive if a > b, negative if a < b, 0 if equal.
