@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as os from 'os';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
+import { createHash } from 'crypto';
 
 const execFileAsync = promisify(execFile);
 
@@ -46,23 +47,61 @@ async function getJacVersionFromDistInfo(jacPath: string): Promise<string | unde
     } catch { return undefined; }
 }
 
-// Middle path: scan ~/.cache/jac/rt/*/site/jaclang-*.dist-info — no subprocess, works for binary installs.
-async function getJacVersionFromCache(): Promise<string | undefined> {
+// Middle path: scan ~/.cache/jac/rt/*/site/jaclang-*.dist-info, keyed on jacPath.
+// New format (≥0.30.3): <hash16>-<pathhash16> — per binary. Old format (≤0.30.2): <hash16> — shared.
+// Old format used only when no new-format dirs exist (prevents cross-version pollution).
+async function getJacVersionFromCache(jacPath: string): Promise<string | undefined> {
     const cacheBase = process.env.XDG_CACHE_HOME ?? path.join(os.homedir(), '.cache');
     const rtDir = path.join(cacheBase, 'jac', 'rt');
     let hashDirs: string[];
     try { hashDirs = await fs.readdir(rtDir); }
     catch { return undefined; }
-    const versions: string[] = [];
-    for (const hashDir of hashDirs) {
-        let entries: string[];
-        try { entries = await fs.readdir(path.join(rtDir, hashDir, 'site')); }
-        catch { continue; }
-        const distInfo = entries.find(e => e.startsWith('jaclang-') && e.endsWith('.dist-info'));
-        if (distInfo) versions.push(distInfo.slice('jaclang-'.length, -'.dist-info'.length));
+    if (hashDirs.length === 0) return undefined;
+
+    const RT_KEY_LEN = 33;
+    const HEX16 = /^[0-9a-f]{16}$/;
+
+    // Runtime hashes realpath(exe); try resolved first, fall back to raw (macOS symlink behaviour).
+    let resolvedPath: string;
+    try { resolvedPath = await fs.realpath(jacPath); } catch { resolvedPath = jacPath; }
+
+    const pathHashFor = (p: string) => createHash('sha256').update(p).digest('hex').slice(0, 16);
+
+    // New format: per-binary
+    const newFormatDirs = hashDirs.filter(d => d.length === RT_KEY_LEN && d[16] === '-');
+    let matchingDirs = newFormatDirs.filter(d => d.slice(17) === pathHashFor(resolvedPath));
+    if (matchingDirs.length === 0 && resolvedPath !== jacPath) {
+        matchingDirs = newFormatDirs.filter(d => d.slice(17) === pathHashFor(jacPath));
     }
-    const unique = [...new Set(versions)];
-    return unique.length === 1 ? unique[0] : undefined;
+
+    if (matchingDirs.length > 0) {
+        const versions: string[] = [];
+        for (const dir of matchingDirs) {
+            let entries: string[];
+            try { entries = await fs.readdir(path.join(rtDir, dir, 'site')); } catch { continue; }
+            const di = entries.find(e => e.startsWith('jaclang-') && e.endsWith('.dist-info'));
+            if (di) versions.push(di.slice('jaclang-'.length, -'.dist-info'.length));
+        }
+        const unique = [...new Set(versions)];
+        if (unique.length === 1) return unique[0];
+        return undefined;
+    }
+
+    // Old format: only when no new-format dirs exist (avoids returning stale version after GC).
+    const oldFormatDirs = hashDirs.filter(d => d.length === 16 && HEX16.test(d));
+    if (newFormatDirs.length === 0 && oldFormatDirs.length > 0) {
+        const versions: string[] = [];
+        for (const dir of oldFormatDirs) {
+            let entries: string[];
+            try { entries = await fs.readdir(path.join(rtDir, dir, 'site')); } catch { continue; }
+            const di = entries.find(e => e.startsWith('jaclang-') && e.endsWith('.dist-info'));
+            if (di) versions.push(di.slice('jaclang-'.length, -'.dist-info'.length));
+        }
+        const unique = [...new Set(versions)];
+        if (unique.length === 1) return unique[0];
+    }
+
+    return undefined;
 }
 
 // Last resort: ask the specific binary directly (~1.8s, may be slow on cold cache).
@@ -75,7 +114,7 @@ async function getJacVersionFromBinary(jacPath: string): Promise<string | undefi
 
 // dist-info (venvs) → cache scan (binary install, no subprocess) → subprocess (last resort).
 export async function getJacVersion(jacPath: string): Promise<string | undefined> {
-    return (await getJacVersionFromDistInfo(jacPath)) ?? (await getJacVersionFromCache()) ?? (await getJacVersionFromBinary(jacPath));
+    return (await getJacVersionFromDistInfo(jacPath)) ?? (await getJacVersionFromCache(jacPath)) ?? (await getJacVersionFromBinary(jacPath));
 }
 
 // Compares two semver strings. Returns positive if a > b, negative if a < b, 0 if equal.

@@ -36,7 +36,7 @@ async function getJacInEnv(envPath: string): Promise<string | null> {
     return (await fileExists(jacPath)) ? jacPath : null;
 }
 
-// Walks directories looking for venvs (identified by pyvenv.cfg) with jac installed
+// Walks dirs for venvs (pyvenv.cfg). Skips .jac/ — those are project plugin venvs.
 async function walkForVenvs(baseDir: string, depth: number): Promise<string[]> {
     if (depth === 0) return [];
 
@@ -49,7 +49,7 @@ async function walkForVenvs(baseDir: string, depth: number): Promise<string[]> {
 
     const results = await Promise.all(
         entries
-            .filter(dirEntry => dirEntry.isDirectory())
+            .filter(dirEntry => dirEntry.isDirectory() && dirEntry.name !== '.jac')
             .map(async (dirEntry): Promise<string[]> => {
                 const fullPath = path.join(baseDir, dirEntry.name);
                 if (await isVenv(fullPath)) {
@@ -140,9 +140,30 @@ async function findInCondaEnvs(): Promise<string[]> {
     return jacResults.filter((result): result is string => result !== null);
 }
 
-// Locator 3: Finds venvs in workspace
+// Locator 3: Finds venvs + zig-out dev builds in workspace.
+// Checks zig-out/bin/jac at root and one level deep (covers both jaseci/ and jaseci/jac/ as workspace).
 async function findInWorkspace(workspaceRoot: string): Promise<string[]> {
-    return walkForVenvs(workspaceRoot, VENV_WALK_DEPTH);
+    const venvs = await walkForVenvs(workspaceRoot, VENV_WALK_DEPTH);
+
+    const jacExe = process.platform === 'win32' ? 'jac.exe' : 'jac';
+    const zigOutPaths: string[] = [];
+
+    const checkZigOut = async (dir: string) => {
+        const candidate = path.join(dir, 'zig-out', 'bin', jacExe);
+        if (await fileExists(candidate)) zigOutPaths.push(candidate);
+    };
+
+    await checkZigOut(workspaceRoot);
+    let entries: Dirent[];
+    try { entries = await fs.readdir(workspaceRoot, { withFileTypes: true }); }
+    catch { entries = []; }
+    await Promise.all(
+        entries
+            .filter(e => e.isDirectory() && !e.name.startsWith('.'))
+            .map(e => checkZigOut(path.join(workspaceRoot, e.name)))
+    );
+
+    return [...venvs, ...zigOutPaths];
 }
 
 // Locator 4: Finds venvs in home directory stores
@@ -196,7 +217,18 @@ export async function discoverJacEnvironments(workspaceRoots: string[]): Promise
     condaEnvs.forEach(envPath => add(envPath, 'conda'));
     homeEnvs.forEach(envPath => add(envPath, 'venv'));
 
-    return envs;
+    // Dedup by realpath: --dev install symlinks ~/.local/bin/jac → zig-out/bin/jac.
+    const seenReal = new Set<string>();
+    const deduped: JacEnvironment[] = [];
+    for (const env of envs) {
+        let real: string;
+        try { real = await fs.realpath(env.path); } catch { real = env.path; }
+        if (!seenReal.has(real)) {
+            seenReal.add(real);
+            deduped.push(env);
+        }
+    }
+    return deduped;
 }
 
 // ── Validation ───────────────────────────────────────────────────────────────
