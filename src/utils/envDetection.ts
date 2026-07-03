@@ -141,7 +141,7 @@ async function findInCondaEnvs(): Promise<string[]> {
 }
 
 // Locator 3: Finds venvs + zig-out dev builds in workspace.
-// Checks zig-out/bin/jac at root and one level deep (covers both jaseci/ and jaseci/jac/ as workspace).
+// Scans zig-out/bin/jac up to two levels deep (workspace may be jaseci/jac/, jaseci/, or a parent).
 async function findInWorkspace(workspaceRoot: string): Promise<string[]> {
     const venvs = await walkForVenvs(workspaceRoot, VENV_WALK_DEPTH);
 
@@ -153,15 +153,20 @@ async function findInWorkspace(workspaceRoot: string): Promise<string[]> {
         if (await fileExists(candidate)) zigOutPaths.push(candidate);
     };
 
-    await checkZigOut(workspaceRoot);
-    let entries: Dirent[];
-    try { entries = await fs.readdir(workspaceRoot, { withFileTypes: true }); }
-    catch { entries = []; }
-    await Promise.all(
-        entries
-            .filter(e => e.isDirectory() && !e.name.startsWith('.'))
-            .map(e => checkZigOut(path.join(workspaceRoot, e.name)))
-    );
+    const scanDir = async (dir: string, depth: number) => {
+        await checkZigOut(dir);
+        if (depth === 0) return;
+        let entries: Dirent[];
+        try { entries = await fs.readdir(dir, { withFileTypes: true }); }
+        catch { return; }
+        await Promise.all(
+            entries
+                .filter(e => e.isDirectory() && !e.name.startsWith('.'))
+                .map(e => scanDir(path.join(dir, e.name), depth - 1))
+        );
+    };
+
+    await scanDir(workspaceRoot, 2);
 
     return [...venvs, ...zigOutPaths];
 }
