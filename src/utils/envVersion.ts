@@ -3,7 +3,6 @@ import * as path from 'path';
 import * as os from 'os';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
-import { createHash } from 'crypto';
 
 const execFileAsync = promisify(execFile);
 
@@ -132,7 +131,7 @@ async function getVersionFromSiteDir(siteDir: string): Promise<string | undefine
 // Two cache dir formats:
 //   New (≥0.30.3): <hash16>-<pathhash16>  (33 chars) — per binary path
 //   Old (≤0.30.2): <hash16>               (16 chars) — per payload, shared
-async function getJacVersionFromCache(jacPath: string, hash16: string | undefined): Promise<string | undefined> {
+async function getJacVersionFromCache(hash16: string | undefined): Promise<string | undefined> {
     const rtDir = path.join(jacCacheBase(), 'jac', 'rt');
     let hashDirs: string[];
     try { hashDirs = await fs.readdir(rtDir); }
@@ -143,7 +142,8 @@ async function getJacVersionFromCache(jacPath: string, hash16: string | undefine
     const HEX16 = /^[0-9a-f]{16}$/;
     const newFormatDirs = hashDirs.filter(d => d.length === RT_KEY_LEN && d[16] === '-');
 
-    // 1. hash16 (payload identity) match — exact and path-independent
+    // 1. hash16 (payload identity) match — rtKey() always derives the dir name from the
+    // same trailer hash16, so any binary with a new-format dir has a readable hash16.
     if (hash16) {
         for (const dir of newFormatDirs.filter(d => d.startsWith(hash16 + '-'))) {
             const ver = await getVersionFromSiteDir(path.join(rtDir, dir, 'site'));
@@ -151,22 +151,7 @@ async function getJacVersionFromCache(jacPath: string, hash16: string | undefine
         }
     }
 
-    // 2. pathhash match — covers binaries whose trailer we couldn't read
-    let resolvedPath: string;
-    try { resolvedPath = await fs.realpath(jacPath); } catch { resolvedPath = jacPath; }
-
-    const pathHashFor = (p: string) => createHash('sha256').update(p).digest('hex').slice(0, 16);
-
-    let matchingDirs = newFormatDirs.filter(d => d.slice(17) === pathHashFor(resolvedPath));
-    if (matchingDirs.length === 0 && resolvedPath !== jacPath) {
-        matchingDirs = newFormatDirs.filter(d => d.slice(17) === pathHashFor(jacPath));
-    }
-    for (const dir of matchingDirs) {
-        const ver = await getVersionFromSiteDir(path.join(rtDir, dir, 'site'));
-        if (ver) return ver;
-    }
-
-    // 3. Old format — only safe when no new-format dirs exist (avoids stale post-GC reads)
+    // 2. Old format — only safe when no new-format dirs exist (avoids stale post-GC reads)
     const oldFormatDirs = hashDirs.filter(d => d.length === 16 && HEX16.test(d));
     if (newFormatDirs.length === 0 && oldFormatDirs.length > 0) {
         const versions: string[] = [];
@@ -203,7 +188,7 @@ export async function getJacVersion(jacPath: string): Promise<string | undefined
         if (memo[hash16]) return memo[hash16];
     }
 
-    const version = (await getJacVersionFromCache(jacPath, hash16)) ?? (await getJacVersionFromBinary(jacPath));
+    const version = (await getJacVersionFromCache(hash16)) ?? (await getJacVersionFromBinary(jacPath));
     if (version && hash16) await memoStore(hash16, version);
     return version;
 }
