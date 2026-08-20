@@ -1,0 +1,10 @@
+# Build tooling is a separate (nearest-wins) Jac project: plain host-side
+# scripts, not part of the js-package extension artifact.
+[project]
+name = "jac-vscode-scripts"
+version = "0.1.0"
+kind = "cli"
+
+# Same temporary dev-source link as the root jac.toml (see note there).
+[dev]
+jaclang_source = "../../jac/jac"

@@ -1,0 +1,20 @@
+{
+  "name": "jac-vscode-integration-tests",
+  "private": true,
+  "description": "TEMPORARY js-side integration harness (restored from the TS era, patched to target the Jac-built extension in .jac/vscode). Runs the extension in a real downloaded VS Code via @vscode/test-electron.",
+  "scripts": {
+    "compile": "rm -rf .build && mkdir -p .build && tar xzf ../.jac/npm-dist/*.tgz -C .build && esbuild .build/package/extension/env_detect.js --bundle --format=cjs --platform=node --outfile=out/env_detect.cjs && esbuild runTest.ts platformHelper.ts suite/index.ts suite/testUtils.ts suite/envDetection.ts suite/constants.ts suite/environment.integration.test.ts suite/lsp.integration.test.ts suite/commands.integration.test.ts --outdir=out --format=cjs --platform=node --packages=external",
+    "test": "bun run compile && node out/runTest.js"
+  },
+  "devDependencies": {
+    "@vscode/test-electron": "^2.4.1",
+    "mocha": "^10.4.0",
+    "chai": "^4.4.1",
+    "glob": "^10.4.1",
+    "esbuild": "^0.24.0",
+    "@types/vscode": "^1.96.0",
+    "@types/mocha": "^10.0.6",
+    "@types/chai": "^4.3.16",
+    "@types/node": "^20.0.0"
+  }
+}

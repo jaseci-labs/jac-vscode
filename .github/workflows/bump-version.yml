@@ -25,14 +25,18 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 20
+      - name: Install jac
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/jaseci-labs/jac/main/scripts/install.sh | bash
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Bump version
         id: release
-        run: node scripts/bump-version.js ${{ inputs.version }}
+        env:
+          BUMP_VERSION: ${{ inputs.version }}
+        run: jac run scripts/bump_version.jac
 
       - name: Configure git
         run: |
@@ -45,7 +49,7 @@ jobs:
           PR_TITLE: ${{ steps.release.outputs.pr_title }}
         run: |
           git checkout -b "$BRANCH_NAME"
-          git add package.json
+          git add jac.toml
           git commit -m "$PR_TITLE"
           git push origin "$BRANCH_NAME"
 

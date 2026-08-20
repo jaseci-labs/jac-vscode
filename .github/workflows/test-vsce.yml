@@ -1,4 +1,4 @@
-name: Test VSCE Extension
+name: Test Extension (Jac build)
 
 on:
   pull_request:
@@ -9,25 +9,74 @@ on:
       - main
 
 jobs:
-  test-vsce:
+  build-and-smoke:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 20
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
 
-      - name: Install Dependencies
-        run: npm install
+      - name: Install jac
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/jaseci-labs/jac/main/scripts/install.sh | bash
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Run Unit Tests (Jest)
-        run: npm run test:unit
+      # TEMPORARY until the next jac release: the extension needs compiler
+      # fixes that are on jaclang main but not in the released binary. The
+      # repo's jac.toml [dev] stanza points at this sibling checkout. Remove
+      # this step (and the stanza) once the release ships.
+      - name: Checkout jaclang main (dev compiler source)
+        run: |
+          git clone --depth 1 https://github.com/jaseci-labs/jac ../jac
+          git -C ../jac log -1 --format='jaclang HEAD: %h %ci %s'
 
-      - name: Install xvfb (virtual display for Linux headless)
+      - name: Build extension from Jac sources
+        run: jac run scripts/build_ext.jac
+
+      - name: Headless smoke test
+        run: jac run scripts/smoke_ext.jac
+
+      - name: Grammar golden tests (bun)
+        working-directory: tests-js
+        run: |
+          bun install
+          bun test
+
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install jac
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/jaseci-labs/jac/main/scripts/install.sh | bash
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      # TEMPORARY until the next jac release (see build-and-smoke job).
+      - name: Checkout jaclang main (dev compiler source)
+        run: |
+          git clone --depth 1 https://github.com/jaseci-labs/jac ../jac
+          git -C ../jac log -1 --format='jaclang HEAD: %h %ci %s'
+
+      - name: Build extension from Jac sources
+        run: jac run scripts/build_ext.jac
+
+      - name: Install xvfb (headless display)
         run: sudo apt-get update && sudo apt-get install -y xvfb
 
-      - name: Run Integration Tests
-        run: xvfb-run -a npm run test:integration
+      - name: Run integration tests (real VS Code against the Jac build)
+        working-directory: tests-integration
+        run: |
+          bun install
+          bun run compile
+          xvfb-run -a node out/runTest.js

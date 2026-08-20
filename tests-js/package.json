@@ -1,0 +1,9 @@
+{
+  "name": "jac-vscode-grammar-tests",
+  "private": true,
+  "description": "TEMPORARY js-side test harness: golden tests for the TextMate grammars, run with `bun test`. Replaced by jac-native tests when jaseci-labs/jac#8033 lands.",
+  "devDependencies": {
+    "vscode-textmate": "^9.3.0",
+    "vscode-oniguruma": "^2.0.1"
+  }
+}
