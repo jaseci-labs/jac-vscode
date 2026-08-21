@@ -20,44 +20,53 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install vsce globally
-        run: npm install --global @vscode/vsce
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
 
-      - name: Install Dependencies & Package Extension
+      - name: Install jac
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
-          npm install
-          vsce package
+          curl -fsSL https://raw.githubusercontent.com/jaseci-labs/jac/main/scripts/install.sh | bash
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      # TEMPORARY until the next jac release (see test-vsce.yml).
+      - name: Checkout jaclang main (dev compiler source)
+        run: git clone --depth 1 https://github.com/jaseci-labs/jac ../jac
+
+      - name: Build extension from Jac sources
+        run: jac run scripts/build_ext.jac
+
+      - name: Install vsce + ovsx
+        run: npm install --global @vscode/vsce ovsx
+
+      - name: Package Extension
+        working-directory: .jac/vscode
+        run: vsce package -o jac.vsix
 
       - name: Publish to VS Code Marketplace
-        run: vsce publish -p $VSCE_TOKEN
+        working-directory: .jac/vscode
+        run: vsce publish --packagePath jac.vsix -p $VSCE_TOKEN
         env:
           VSCE_TOKEN: ${{ secrets.VSCE_TOKEN }}
 
-      - name: Install ovsx CLI
-        run: npm install -g ovsx
-
       - name: Publish to OpenVSX
-        run: ovsx publish *.vsix --pat $OVSX_TOKEN
+        working-directory: .jac/vscode
+        run: ovsx publish jac.vsix --pat $OVSX_TOKEN
         env:
           OVSX_TOKEN: ${{ secrets.OVSX_TOKEN }}
 
       - name: Get Extension Version
         id: get_version
         run: |
-          VERSION=$(node -p "require('./package.json').version")
+          VERSION=$(grep -m1 '^version = ' jac.toml | sed 's/version = "\(.*\)"/\1/')
           echo "version=v$VERSION" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release with VSIX Asset
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "${{ steps.get_version.outputs.version }}" \
-            --title "VS Code Extension Release ${{ steps.get_version.outputs.version }}" \
-            --notes "VS Code Extension Release ${{ steps.get_version.outputs.version }}
-
-          This release was created automatically after publishing to VS Code Marketplace.
-
-          ## Changes
-          - Extension published to marketplace
-          - VSIX file attached for manual installation" \
-            *.vsix
+            .jac/vscode/jac.vsix \
+            --title "${{ steps.get_version.outputs.version }}" \
+            --generate-notes

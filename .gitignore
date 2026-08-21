@@ -4,7 +4,12 @@ vendor/
 .env
 .vscode/
 .jaccache/
-.jac/cache
+.jac/
 .vscode-test/
 .DS_Store
 package-lock.json
+jac.local.toml
+tests-js/node_modules
+tests-integration/node_modules
+tests-integration/out
+tests-integration/.build

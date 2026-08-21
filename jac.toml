@@ -1,0 +1,142 @@
+# Jac project config — the single source of truth for the extension rewrite.
+# The VS Code manifest (package.json) is GENERATED from [project] + [vscode]
+# into .jac/vscode/ by `jac run scripts/build_ext.jac`; nothing under .jac/ is
+# committed. See https://github.com/jaseci-labs/jac-vscode/issues/103
+
+[project]
+name = "jaclang-extension"
+version = "2026.6.30"
+description = "Jac language support for VS Code (compiler, LSP, syntax highlighting)"
+kind = "js-package"
+entry-point = "extension/main.jac"
+
+[project.include]
+packages = ["extension"]
+
+# TEMPORARY until the next jac release: the extension needs compiler fixes
+# that are on jaclang main but not in the 0.36.0 binary. Assumes a sibling
+# checkout of jaseci-labs/jac. The 0.36.0 launcher only honors this stanza
+# from jac.toml (not jac.local.toml).
+[dev]
+jaclang_source = "../jac/jac"
+
+# The `vscode` module itself is host-provided — external, never a dep.
+[dependencies.npm]
+vscode-languageclient = "^9.0.1"
+vscode-textmate = "^9.3.0"
+vscode-oniguruma = "^2.0.1"
+
+[dependencies.npm.dev]
+"@types/vscode" = "^1.96.0"
+
+# smoke/ sits outside [project.include], so kind-based client coercion does
+# not reach it; pin it to the JS codespace explicitly. (Build tooling under
+# scripts/ is its own nearest-wins CLI project — see scripts/jac.toml.)
+[placement.pins]
+"smoke.*" = "client"
+
+[vscode]
+publisher = "jaseci-labs"
+engines = "^1.96.0"
+display-name = "Jac (Jac-built probe)"
+extension-dependencies = ["ms-python.python"]
+# Until the language/grammar contributions migrate (which give implicit
+# onLanguage:jac activation), activate on startup so the status bar shows.
+activation-events = ["onStartupFinished"]
+
+[vscode.contributes.configuration]
+title = "Jac"
+
+[vscode.contributes.configuration.properties."jaclang-extension.showServeCommand"]
+type = "boolean"
+default = false
+description = "Show the 'Jac: Serve' button in the editor title."
+
+[vscode.contributes.configuration.properties."jaclang-extension.developerMode"]
+type = "boolean"
+default = false
+description = "Enable developer tooling (restart LSP button, token scope inspector)."
+
+[vscode.contributes.configuration.properties."jaclang-extension.syntaxHighlightingOnly"]
+type = "boolean"
+default = false
+description = "Skip environment detection and the language server; only syntax highlighting."
+
+[[vscode.contributes.commands]]
+command = "jaclang-extension.selectEnv"
+title = "Jac: Select Environment"
+
+[[vscode.contributes.commands]]
+command = "jaclang-extension.runCurrentFile"
+title = "Jac: Run Current File"
+icon = "$(play)"
+
+[[vscode.contributes.commands]]
+command = "jaclang-extension.serveCurrentFile"
+title = "Jac: Serve Current File"
+icon = "$(cloud)"
+
+[[vscode.contributes.commands]]
+command = "jaclang-extension.debugCurrentFile"
+title = "Jac: Debug Current File"
+icon = "$(debug-alt)"
+
+[[vscode.contributes.commands]]
+command = "jaclang-extension.toggleDeveloperMode"
+title = "Jac: Toggle Developer Mode"
+
+[[vscode.contributes.commands]]
+command = "jaclang-extension.restartLanguageServer"
+title = "Jac: Restart Language Server"
+icon = "$(refresh)"
+
+[[vscode.contributes.commands]]
+command = "jac.lintfixFormat"
+title = "Jac: Lint Fix (Format with Fixes)"
+
+[[vscode.contributes.commands]]
+command = "jaclang-extension.inspectTokenScopes"
+title = "Jac: Inspect Token Scopes"
+
+[[vscode.contributes.commands]]
+command = "jaclang-extension.visualizeGraph"
+title = "Jac: Visualize Graph"
+
+[[vscode.contributes.languages]]
+id = "jac"
+extensions = [".jac"]
+aliases = ["Jac", "jac"]
+configuration = "./language-configuration.json"
+icon = { light = "./assets/file-icon.svg", dark = "./assets/file-icon.svg" }
+
+[[vscode.contributes.languages]]
+id = "jactoml"
+filenames = ["jac.toml"]
+aliases = ["Jac TOML"]
+configuration = "./language-configuration.jactoml.json"
+
+[[vscode.contributes.grammars]]
+language = "jac"
+scopeName = "source.jac"
+path = "./syntaxes/jac.tmLanguage.json"
+
+[[vscode.contributes.grammars]]
+language = "jactoml"
+scopeName = "source.jactoml"
+path = "./syntaxes/jactoml.tmLanguage.json"
+
+[vscode.contributes.menus]
+"editor/title/run" = [
+    { command = "jaclang-extension.runCurrentFile", when = "resourceLangId == jac && !config.jaclang-extension.syntaxHighlightingOnly", group = "navigation" },
+    { command = "jaclang-extension.debugCurrentFile", when = "resourceLangId == jac && !config.jaclang-extension.syntaxHighlightingOnly", group = "navigation" }
+]
+"editor/title" = [
+    { command = "jaclang-extension.restartLanguageServer", when = "resourceLangId == jac && config.jaclang-extension.developerMode", group = "navigation" },
+    { command = "jaclang-extension.serveCurrentFile", when = "resourceLangId == jac && config.jaclang-extension.showServeCommand", group = "navigation" }
+]
+"editor/context" = [
+    { command = "jac.lintfixFormat", when = "resourceLangId == jac", group = "1_modification" }
+]
+"commandPalette" = [
+    { command = "jaclang-extension.inspectTokenScopes", when = "config.jaclang-extension.developerMode" }
+]
