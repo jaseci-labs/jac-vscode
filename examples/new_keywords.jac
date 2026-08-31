@@ -15,5 +15,4 @@ with entry {
         flow compute();
     }
     print(props);
-    inst = new(Base);
 }

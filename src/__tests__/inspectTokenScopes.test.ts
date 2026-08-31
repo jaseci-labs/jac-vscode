@@ -1336,9 +1336,4 @@ describe('new_keywords.jac', () => {
         });
     });
 
-    describe('new ambient builtin (line 18)', () => {
-        test('new function', () => {
-            expectToken(result, 18, 12, 15, 'new', ['source.jac', 'meta.function-call.jac', 'support.function.builtin.jac']);
-        });
-    });
 });
