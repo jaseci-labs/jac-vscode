@@ -55,7 +55,7 @@ To visualize the Jac graph while debugging, open the graph visualize view using 
 # Features
 
 - Code completion
-- Syntax highlighting
+- Syntax highlighting, covering the latest Jac syntax: `comptime`, `forever`/`flow`/`wait`, ownership modifiers (`own`/`mut`/`imm`), `abst`, fixed-width numeric types (`i8`–`f64`), and special variables like `props`
 - Snippets
 - Go to definition
 - Document symbols, workspace symbols
