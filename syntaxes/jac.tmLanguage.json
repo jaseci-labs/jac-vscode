@@ -1012,11 +1012,14 @@
 				},
 				{
 					"name": "keyword.control.flow.jac",
-					"match": "(?x)\n  \\b(?<!\\.)(\n    async | await | awaiting | continue | entry | exit | del | assert | break | finally | for\n    | from | elif | else | if | except | pass | raise\n    | return | report | try | while | with | to | by | spawn | ignore | visit | disengage | skip | lambda\n  )\\b\n"
+					"match": "(?x)\n  \\b(?<!\\.)(\n    async | await | awaiting | continue | entry | exit | del | assert | break | finally | for\n    | from | elif | else | if | except | pass | raise | forever | flow | wait\n    | return | report | try | while | with | to | by | spawn | ignore | visit | disengage | skip | lambda\n  )\\b\n"
+				},
+				{
+					"include": "#ownership-modifiers"
 				},
 				{
 					"name": "storage.modifier.declaration.jac",
-					"match": "(?x)\n  \\b(?<!\\.)(\n    priv|protect|pub|static|override|let|abs|glob|global|nonlocal|cl|sv|na\n  )\\b\n"
+					"match": "(?x)\n  \\b(?<!\\.)(\n    priv|protect|pub|static|override|comptime|let|glob|global|nonlocal|cl|sv|na\n  )\\b\n"
 				},
 				{
 					"name": "storage.type.class.jac",
@@ -2067,6 +2070,9 @@
 			},
 			"patterns": [
 				{
+					"include": "#ownership-modifiers"
+				},
+				{
 					"name": "keyword.operator.positional.parameter.jac",
 					"match": "/"
 				},
@@ -2168,6 +2174,9 @@
 			},
 			"patterns": [
 				{
+					"include": "#ownership-modifiers"
+				},
+				{
 					"include": "#expression"
 				},
 				{
@@ -2185,6 +2194,9 @@
 				}
 			},
 			"patterns": [
+				{
+					"include": "#ownership-modifiers"
+				},
 				{
 					"include": "#expression"
 				}
@@ -2472,9 +2484,13 @@
 				}
 			]
 		},
+		"ownership-modifiers": {
+			"name": "storage.modifier.declaration.jac",
+			"match": "(?x)\\b(?<!\\.)(own|mut|imm|abst)\\b"
+		},
 		"builtin-types": {
 			"name": "support.type.jac",
-			"match": "(?x)(?<!\\.) \\b(str|int|float|list|tuple|set|dict|bool|bytes|any|type)\\b\n"
+			"match": "(?x)(?<!\\.) \\b(str|int|float|list|tuple|set|dict|bool|bytes|any|type|i8|u8|i16|u16|i32|u32|i64|u64|f32|f64)\\b\n"
 		},
 		"magic-function-names": {
 			"comment": "these methods have magic interpretation by python and are generally called\nindirectly through syntactic constructs\n",
@@ -2516,7 +2532,7 @@
 			}
 		},
 		"special-variables": {
-			"match": "(?x)\\b(here|visitor|self|init|postinit|super|root)\\b",
+			"match": "(?x)\\b(here|visitor|self|props|init|postinit|super|root)\\b",
 			"captures": {
 				"1": {
 					"name": "variable.language.special.self.jac"
