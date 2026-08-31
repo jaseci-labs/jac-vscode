@@ -1015,8 +1015,11 @@
 					"match": "(?x)\n  \\b(?<!\\.)(\n    async | await | awaiting | continue | entry | exit | del | assert | break | finally | for\n    | from | elif | else | if | except | pass | raise | forever | flow | wait\n    | return | report | try | while | with | to | by | spawn | ignore | visit | disengage | skip | lambda\n  )\\b\n"
 				},
 				{
+					"include": "#ownership-modifiers"
+				},
+				{
 					"name": "storage.modifier.declaration.jac",
-					"match": "(?x)\n  \\b(?<!\\.)(\n    priv|protect|pub|static|override|comptime|abst|own|mut|imm|let|glob|global|nonlocal|cl|sv|na\n  )\\b\n"
+					"match": "(?x)\n  \\b(?<!\\.)(\n    priv|protect|pub|static|override|comptime|let|glob|global|nonlocal|cl|sv|na\n  )\\b\n"
 				},
 				{
 					"name": "storage.type.class.jac",
