@@ -1259,7 +1259,7 @@ describe('by_postinit.jac', () => {
 
 // ---------------------------------------------------------------------------
 // new_keywords.jac — comptime, forever/flow/wait, own/mut/imm, abst,
-// fixed-width numeric types, props, new (see issue #105)
+// fixed-width numeric types, props (see issue #105)
 // ---------------------------------------------------------------------------
 describe('new_keywords.jac', () => {
     let result: TokenizeResult;
@@ -1274,66 +1274,73 @@ describe('new_keywords.jac', () => {
         });
     });
 
-    describe('abst obj with ownership modifiers (lines 3-4)', () => {
-        test('abst modifier', () => {
-            expectToken(result, 3, 1, 5, 'abst', ['source.jac', 'storage.modifier.declaration.jac']);
-        });
-
+    describe('obj with ownership-annotated has field (lines 3-6)', () => {
         test('obj keyword', () => {
-            expectToken(result, 3, 6, 9, 'obj', ['source.jac', 'meta.class.jac', 'storage.type.class.jac']);
+            expectToken(result, 3, 1, 4, 'obj', ['source.jac', 'meta.class.jac', 'storage.type.class.jac']);
         });
 
-        test('own modifier', () => {
-            expectToken(result, 4, 9, 12, 'own', ['source.jac', 'meta.property.jac', 'storage.modifier.declaration.jac']);
+        test('own ownership in has annotation', () => {
+            expectToken(result, 4, 15, 18, 'own', ['source.jac', 'meta.property.jac', 'storage.modifier.declaration.jac']);
         });
 
-        test('mut modifier', () => {
-            expectToken(result, 4, 19, 22, 'mut', ['source.jac', 'meta.property.jac', 'storage.modifier.declaration.jac']);
+        test('f64 return type of abstract ability', () => {
+            expectToken(result, 6, 17, 20, 'f64', ['source.jac', 'meta.function.jac', 'support.type.jac']);
+        });
+
+        test('abst postfix marker', () => {
+            expectToken(result, 6, 21, 25, 'abst', ['source.jac', 'meta.function.jac', 'storage.modifier.declaration.jac']);
         });
     });
 
-    describe('fixed-width numeric types (line 7)', () => {
+    describe('ownership and fixed-width types in parameters (line 13)', () => {
+        test('mut ownership in &mut parameter', () => {
+            expectToken(result, 13, 16, 19, 'mut', ['source.jac', 'meta.function.parameters.jac', 'storage.modifier.declaration.jac']);
+        });
+
         test('i32 parameter type', () => {
-            expectToken(result, 7, 14, 17, 'i32', ['source.jac', 'meta.function.parameters.jac', 'support.type.jac']);
+            expectToken(result, 13, 20, 23, 'i32', ['source.jac', 'meta.function.parameters.jac', 'support.type.jac']);
+        });
+
+        test('imm ownership in parameter', () => {
+            expectToken(result, 13, 29, 32, 'imm', ['source.jac', 'meta.function.parameters.jac', 'storage.modifier.declaration.jac']);
         });
 
         test('u64 parameter type', () => {
-            expectToken(result, 7, 22, 25, 'u64', ['source.jac', 'meta.function.parameters.jac', 'support.type.jac']);
+            expectToken(result, 13, 33, 36, 'u64', ['source.jac', 'meta.function.parameters.jac', 'support.type.jac']);
         });
 
         test('f64 return type', () => {
-            expectToken(result, 7, 30, 33, 'f64', ['source.jac', 'meta.function.jac', 'support.type.jac']);
+            expectToken(result, 13, 41, 44, 'f64', ['source.jac', 'meta.function.jac', 'support.type.jac']);
         });
     });
 
-    describe('comptime statement (line 12)', () => {
+    describe('comptime statement (line 18)', () => {
         test('comptime modifier before if', () => {
-            expectToken(result, 12, 5, 13, 'comptime', ['source.jac', 'storage.modifier.declaration.jac']);
+            expectToken(result, 18, 5, 13, 'comptime', ['source.jac', 'storage.modifier.declaration.jac']);
         });
 
         test('if keyword after comptime', () => {
-            expectToken(result, 12, 14, 16, 'if', ['source.jac', 'keyword.control.flow.jac']);
+            expectToken(result, 18, 14, 16, 'if', ['source.jac', 'keyword.control.flow.jac']);
         });
     });
 
-    describe('forever / wait / flow (lines 13-15)', () => {
+    describe('forever / flow / wait (lines 19-21)', () => {
         test('forever keyword', () => {
-            expectToken(result, 13, 5, 12, 'forever', ['source.jac', 'keyword.control.flow.jac']);
-        });
-
-        test('wait keyword', () => {
-            expectToken(result, 14, 9, 13, 'wait', ['source.jac', 'keyword.control.flow.jac']);
+            expectToken(result, 19, 5, 12, 'forever', ['source.jac', 'keyword.control.flow.jac']);
         });
 
         test('flow keyword', () => {
-            expectToken(result, 15, 9, 13, 'flow', ['source.jac', 'keyword.control.flow.jac']);
+            expectToken(result, 20, 13, 17, 'flow', ['source.jac', 'keyword.control.flow.jac']);
+        });
+
+        test('wait keyword', () => {
+            expectToken(result, 21, 9, 13, 'wait', ['source.jac', 'keyword.control.flow.jac']);
         });
     });
 
-    describe('props special variable (line 17)', () => {
+    describe('props special variable (line 24)', () => {
         test('props', () => {
-            expectToken(result, 17, 11, 16, 'props', ['source.jac', 'variable.language.special.self.jac']);
+            expectToken(result, 24, 11, 16, 'props', ['source.jac', 'variable.language.special.self.jac']);
         });
     });
-
 });

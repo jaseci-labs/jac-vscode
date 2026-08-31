@@ -1,18 +1,25 @@
 comptime MAX = 8;
 
-abst obj Base {
-    has own data: mut int;
+obj Base {
+    has data: own int = 0;
+
+    def area -> f64 abst;
 }
 
-def widen(a: i32, b: u64) -> f64 {
-    return a;
+def compute -> int {
+    return MAX;
+}
+
+def widen(_a: &mut i32, _b: imm u64) -> f64 {
+    return 1.0;
 }
 
 with entry {
     comptime if MAX > 4 { print(MAX); }
     forever {
-        wait task;
-        flow compute();
+        t = flow compute();
+        wait t;
+        break;
     }
     print(props);
 }

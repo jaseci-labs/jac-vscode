@@ -2067,6 +2067,9 @@
 			},
 			"patterns": [
 				{
+					"include": "#ownership-modifiers"
+				},
+				{
 					"name": "keyword.operator.positional.parameter.jac",
 					"match": "/"
 				},
@@ -2168,6 +2171,9 @@
 			},
 			"patterns": [
 				{
+					"include": "#ownership-modifiers"
+				},
+				{
 					"include": "#expression"
 				},
 				{
@@ -2185,6 +2191,9 @@
 				}
 			},
 			"patterns": [
+				{
+					"include": "#ownership-modifiers"
+				},
 				{
 					"include": "#expression"
 				}
@@ -2471,6 +2480,10 @@
 					"match": "(?x)\n  (?<!\\.) \\b(\n    file | reduce | intern | raw_input | unicode | cmp | basestring\n    | execfile | long | xrange\n  )\\b\n"
 				}
 			]
+		},
+		"ownership-modifiers": {
+			"name": "storage.modifier.declaration.jac",
+			"match": "(?x)\\b(?<!\\.)(own|mut|imm|abst)\\b"
 		},
 		"builtin-types": {
 			"name": "support.type.jac",
