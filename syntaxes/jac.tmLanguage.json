@@ -116,7 +116,7 @@
 				{
 					"name": "meta.semstring.jac",
 					"begin": "(?x)\\b(sem)\\b(?=\\s*[[:alpha:]_]\\w*|\\s*\\n)",
-					"end": ";|(?=^\\s*(?:cl|sv|na|def|impl|with|sem|import|glob|let|enum|obj|class|node|edge|walker|test)\\b)",
+					"end": ";|(?=^\\s*(?:cl|sv|na|def|impl|with|sem|import|glob|enum|obj|class|node|edge|walker|test)\\b)",
 					"beginCaptures": {
 						"1": {
 							"name": "storage.type.semstring.jac"
@@ -1012,14 +1012,14 @@
 				},
 				{
 					"name": "keyword.control.flow.jac",
-					"match": "(?x)\n  \\b(?<!\\.)(\n    async | await | awaiting | continue | entry | exit | del | assert | break | finally | for\n    | from | elif | else | if | except | pass | raise | forever | flow | wait\n    | return | report | try | while | with | to | by | spawn | ignore | visit | disengage | skip | lambda\n  )\\b\n"
+					"match": "(?x)\n  \\b(?<!\\.)(\n    async | await | awaiting | continue | entry | exit | del | assert | break | finally | for\n    | from | elif | else | if | except | raise | forever | flow | wait\n    | return | report | try | while | with | by | spawn | graph | visit | disengage | skip | lambda\n  )\\b\n"
 				},
 				{
 					"include": "#ownership-modifiers"
 				},
 				{
 					"name": "storage.modifier.declaration.jac",
-					"match": "(?x)\n  \\b(?<!\\.)(\n    priv|protect|pub|static|override|comptime|let|glob|global|nonlocal|cl|sv|na\n  )\\b\n"
+					"match": "(?x)\n  \\b(?<!\\.)(\n    priv|protect|pub|static|override|comptime|glob|cl|sv|na\n  )\\b\n"
 				},
 				{
 					"name": "storage.type.class.jac",
@@ -2486,7 +2486,7 @@
 		},
 		"ownership-modifiers": {
 			"name": "storage.modifier.declaration.jac",
-			"match": "(?x)\\b(?<!\\.)(own|mut|imm|abst)\\b"
+			"match": "(?x)\\b(?<!\\.)(own|mut|imm|lin|abst)\\b"
 		},
 		"builtin-types": {
 			"name": "support.type.jac",
