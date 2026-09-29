@@ -45,6 +45,7 @@ const slotKeywordsContent = fs.readFileSync(path.join(EXAMPLES_DIR, 'slot_keywor
 const arrowReproContent   = fs.readFileSync(path.join(EXAMPLES_DIR, 'arrow_repro.jac'), 'utf-8');
 const byPostinitContent   = fs.readFileSync(path.join(EXAMPLES_DIR, 'by_postinit.jac'), 'utf-8');
 const newKeywordsContent  = fs.readFileSync(path.join(EXAMPLES_DIR, 'new_keywords.jac'), 'utf-8');
+const graphLinContent     = fs.readFileSync(path.join(EXAMPLES_DIR, 'graph_lin.jac'), 'utf-8');
 
 /**
  * Helper to assert a token has expected text and contains expected scopes
@@ -1341,6 +1342,43 @@ describe('new_keywords.jac', () => {
     describe('props special variable (line 24)', () => {
         test('props', () => {
             expectToken(result, 24, 11, 16, 'props', ['source.jac', 'variable.language.special.self.jac']);
+        });
+    });
+});
+
+// ---------------------------------------------------------------------------
+// graph_lin.jac: graph construction expressions, the lin ownership marker,
+// and `to` as a plain identifier now that it is no longer a keyword
+// ---------------------------------------------------------------------------
+describe('graph_lin.jac', () => {
+    let result: TokenizeResult;
+
+    beforeAll(async () => {
+        result = await tokenizeContent(graphLinContent, GRAMMAR_PATH, WASM_PATH);
+    });
+
+    describe('lin ownership marker', () => {
+        test('lin in parameter annotation (line 5)', () => {
+            expectToken(result, 5, 14, 17, 'lin', ['source.jac', 'meta.function.parameters.jac', 'storage.modifier.declaration.jac']);
+        });
+
+        test('lin in local binding annotation (line 13)', () => {
+            expectToken(result, 13, 8, 11, 'lin', ['source.jac', 'storage.modifier.declaration.jac']);
+        });
+    });
+
+    describe('graph construction expression (line 12)', () => {
+        test('graph keyword', () => {
+            expectToken(result, 12, 9, 14, 'graph', ['source.jac', 'keyword.control.flow.jac']);
+        });
+    });
+
+    describe('removed keywords (line 15)', () => {
+        test('to is a plain identifier', () => {
+            const token = getTokenByLocation(result, 15, 1, 8);
+            expect(token).toBeDefined();
+            expect(token!.text).toBe('    to ');
+            expect(token!.scopes).not.toContain('keyword.control.flow.jac');
         });
     });
 });
