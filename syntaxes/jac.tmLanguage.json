@@ -11,6 +11,9 @@
 		"elements": {
 			"patterns": [
 				{
+					"include": "#archwire"
+				},
+				{
 					"include": "#decorator"
 				},
 				{
@@ -21,6 +24,12 @@
 				},
 				{
 					"include": "#sem"
+				},
+				{
+					"include": "#struct-union"
+				},
+				{
+					"include": "#type-alias"
 				},
 				{
 					"include": "#archetype"
@@ -35,6 +44,9 @@
 					"include": "#accessor"
 				},
 				{
+					"include": "#for-counting"
+				},
+				{
 					"include": "#ability"
 				},
 				{
@@ -45,10 +57,13 @@
 		"import": {
 			"patterns": [
 				{
-					"begin": "\\b(?<!\\.)(import|include)\\b",
+					"begin": "\\b(?<!\\.)(import|include)\\b(?:\\s+(type)\\b(?=\\s+[[:alpha:]_\"]))?",
 					"end": ";|}",
 					"beginCaptures": {
 						"1": {
+							"name": "keyword.control.import.jac"
+						},
+						"2": {
 							"name": "keyword.control.import.jac"
 						}
 					},
@@ -76,7 +91,7 @@
 			"patterns": [
 				{
 					"name": "meta.property.jac",
-					"begin": "(?x)\\b(glob)\\b(?=\\s*[[:alpha:]_]\\w*|\\s*\\n)",
+					"begin": "(?x)\\b(glob)\\b(?=\\s*[[:alpha:]_]\\w*|\\s*\\n|:(?:pub|priv|protect|prot)\\b)",
 					"end": ";",
 					"beginCaptures": {
 						"1": {
@@ -89,6 +104,9 @@
 						}
 					},
 					"patterns": [
+						{
+							"include": "#access-tag"
+						},
 						{
 							"include": "#comments"
 						},
@@ -154,7 +172,7 @@
 			"patterns": [
 				{
 					"name": "meta.class.jac",
-					"begin": "(?x)\\b(enum|obj|class|node|edge|walker|test)\\b(?=\\s+[[:alpha:]_]\\w*|:(pub|priv|protect)?\\s+[[:alpha:]_]\\w*|\\s*({|;|\\n))",
+					"begin": "(?x)\\b(enum|obj|class|node|edge|walker|test)\\b(?!\\s+(?:static\\s+|async\\s+)*(?:def|can)\\b)(?=\\s+[[:alpha:]_]\\w*|:(pub|priv|protect|prot)?\\s+[[:alpha:]_]\\w*|\\s*({|;|\\n))",
 					"end": "(?={)|;",
 					"beginCaptures": {
 						"1": {
@@ -168,10 +186,13 @@
 					},
 					"patterns": [
 						{
-							"match": ":(pub|priv|protect)?",
+							"match": ":(pub|priv|protect|prot)?",
 							"captures": {
 								"1": { "name": "storage.modifier.declaration.jac" }
 							}
+						},
+						{
+							"include": "#type-parameters"
 						},
 						{
 							"include": "#class-name"
@@ -215,13 +236,16 @@
 			"patterns": [
 				{
 					"name": "meta.function.jac",
-					"begin": "(?x)\\b(?:(cl|sv|na)\\s+)?(can|with|def|impl|sem)\\b(?=\\s*[[:alpha:]_]\\w*|\\s*({|;|\\(||\\n))",
+					"begin": "(?x)\\b(?:(cl|sv|na)\\s+)?(?:(async)\\s+)?(can|with|def|impl|sem)\\b(?=\\s*[[:alpha:]_]\\w*|\\s*({|;|\\(||\\n))",
 					"end": "(?=\\)|{)|;",
 					"beginCaptures": {
 						"1": {
 							"name": "storage.modifier.declaration.jac"
 						},
 						"2": {
+							"name": "storage.type.function.async.jac"
+						},
+						"3": {
 							"name": "storage.type.function.jac"
 						}
 					},
@@ -232,11 +256,20 @@
 					},
 					"patterns": [
 						{
+							"include": "#access-tag"
+						},
+						{
+							"include": "#where-clause"
+						},
+						{
 							"include": "#comments"
 						},
 						{
 							"name": "punctuation.separator.jac",
 							"match": ","
+						},
+						{
+							"include": "#type-parameters"
 						},
 						{
 							"include": "#parameters"
@@ -310,7 +343,7 @@
 			"patterns": [
 				{
 					"name": "meta.property.jac",
-					"begin": "(?x)\\b(has)\\b(?=\\s*[[:alpha:]_]\\w*|\\s*({|;|\\(||\\n))",
+					"begin": "(?x)\\b(has)\\b(?=\\s*[[:alpha:]_]\\w*|:(?:pub|priv|protect|prot)\\b|\\s*({|;|\\(||\\n))",
 					"end": "(?=\\)|{)|;",
 					"beginCaptures": {
 						"1": {
@@ -323,6 +356,9 @@
 						}
 					},
 					"patterns": [
+						{
+							"include": "#access-tag"
+						},
 						{
 							"include": "#comments"
 						},
@@ -369,6 +405,392 @@
 				}
 			]
 		},
+		"access-tag": {
+			"match": "(?<=\\bglob|\\bhas|\\bdef|\\bcan|\\btype|\\bimpl)(:)(pub|priv|protect|prot)\\b",
+			"captures": {
+				"1": {
+					"name": "punctuation.separator.access.jac"
+				},
+				"2": {
+					"name": "storage.modifier.declaration.jac"
+				}
+			}
+		},
+		"type-parameters": {
+			"name": "meta.type-parameters.jac",
+			"begin": "(?<=[[:alnum:]_])(\\[)",
+			"end": "(\\])",
+			"beginCaptures": {
+				"1": {
+					"name": "punctuation.definition.type-parameters.begin.jac"
+				}
+			},
+			"endCaptures": {
+				"1": {
+					"name": "punctuation.definition.type-parameters.end.jac"
+				}
+			},
+			"patterns": [
+				{
+					"include": "#comments"
+				},
+				{
+					"match": "(?:(?<=\\[)|(?<=,))\\s*(?:(comptime)\\s+)?(?:(\\*)\\s*)?([[:alpha:]_]\\w*)\\b",
+					"captures": {
+						"1": {
+							"name": "storage.modifier.declaration.jac"
+						},
+						"2": {
+							"name": "keyword.operator.unpacking.parameter.jac"
+						},
+						"3": {
+							"name": "entity.name.type.parameter.jac"
+						}
+					}
+				},
+				{
+					"name": "punctuation.separator.jac",
+					"match": ","
+				},
+				{
+					"include": "#expression"
+				}
+			]
+		},
+		"where-clause": {
+			"match": "(?<=[\\w)\\]])\\s+(where)\\b(?=\\s+[^\\s{;(\\-])",
+			"captures": {
+				"1": {
+					"name": "keyword.control.flow.jac"
+				}
+			}
+		},
+		"struct-union": {
+			"name": "meta.class.jac",
+			"begin": "(?x)\\b(?<!\\.)(struct|union)\\b(?=(?::(?:pub|priv|protect|prot))?\\s+[[:alpha:]_]\\w*\\s*[\\[({;:]|(?::(?:pub|priv|protect|prot))?\\s+[[:alpha:]_]\\w*\\s*$)",
+			"end": "(?={)|;",
+			"beginCaptures": {
+				"1": {
+					"name": "storage.type.class.jac"
+				}
+			},
+			"patterns": [
+				{
+					"match": ":(pub|priv|protect|prot)",
+					"captures": {
+						"1": {
+							"name": "storage.modifier.declaration.jac"
+						}
+					}
+				},
+				{
+					"include": "#type-parameters"
+				},
+				{
+					"include": "#class-name"
+				},
+				{
+					"include": "#class-inheritance"
+				}
+			]
+		},
+		"type-alias": {
+			"name": "meta.type-alias.jac",
+			"begin": "(?x)^\\s*(type)(?:(:)(pub|priv|protect|prot))?\\s+([[:alpha:]_]\\w*)(?=\\s*(?:\\[|=|:=))",
+			"end": "(?=\\s*:?=)",
+			"patterns": [
+				{
+					"include": "#type-parameters"
+				}
+			],
+			"beginCaptures": {
+				"1": {
+					"name": "storage.type.alias.jac"
+				},
+				"2": {
+					"name": "punctuation.separator.access.jac"
+				},
+				"3": {
+					"name": "storage.modifier.declaration.jac"
+				},
+				"4": {
+					"name": "entity.name.type.alias.jac"
+				}
+			}
+		},
+		"for-counting": {
+			"name": "meta.for.counting.jac",
+			"begin": "\\b(?<!\\.)(for)\\b(?=[^{;]*\\bwhile\\b[^{;]*\\bwith\\b)",
+			"end": "(?=\\{)",
+			"beginCaptures": {
+				"1": {
+					"name": "keyword.control.flow.jac"
+				}
+			},
+			"patterns": [
+				{
+					"name": "keyword.control.flow.jac",
+					"match": "\\b(while|with)\\b"
+				},
+				{
+					"include": "#general"
+				}
+			]
+		},
+		"jac-operator": {
+			"patterns": [
+				{
+					"name": "keyword.operator.assignment.jac",
+					"match": "(?:\\+|-|\\*)(?:%|\\|)="
+				},
+				{
+					"name": "keyword.operator.arithmetic.jac",
+					"match": "(?:\\+|-|\\*)(?:%|\\|)(?![>=])"
+				},
+				{
+					"name": "keyword.operator.logical.jac",
+					"match": "\\?\\?"
+				},
+				{
+					"name": "keyword.operator.pipe.jac",
+					"match": "\\|>|<\\||:>|<:(?![-+])"
+				},
+				{
+					"name": "punctuation.accessor.optional.jac",
+					"match": "\\?\\.(?!\\d)"
+				}
+			]
+		},
+		"archwire": {
+			"patterns": [
+				{
+					"name": "meta.archwire.jac",
+					"begin": "\\b(graph)\\s+(spaces|layers)\\b(?:\\s+([[:alpha:]_]\\w*))?\\s*(\\{)",
+					"end": "\\}",
+					"beginCaptures": {
+						"1": {
+							"name": "keyword.control.flow.jac"
+						},
+						"2": {
+							"name": "keyword.control.flow.jac"
+						},
+						"3": {
+							"name": "entity.name.type.class.jac"
+						},
+						"4": {
+							"name": "punctuation.section.block.begin.jac"
+						}
+					},
+					"endCaptures": {
+						"0": {
+							"name": "punctuation.section.block.end.jac"
+						}
+					},
+					"patterns": [
+						{
+							"include": "#archwire-decls"
+						}
+					]
+				},
+				{
+					"name": "meta.archwire.jac",
+					"begin": "\\b(graph)\\s+(import)\\b(?:\\s+([[:alpha:]_][\\w.]*))?\\s*(\\{)",
+					"end": "\\}",
+					"beginCaptures": {
+						"1": {
+							"name": "keyword.control.flow.jac"
+						},
+						"2": {
+							"name": "keyword.control.import.jac"
+						},
+						"3": {
+							"name": "entity.name.namespace.jac"
+						},
+						"4": {
+							"name": "punctuation.section.block.begin.jac"
+						}
+					},
+					"endCaptures": {
+						"0": {
+							"name": "punctuation.section.block.end.jac"
+						}
+					},
+					"patterns": [
+						{
+							"include": "#comments"
+						},
+						{
+							"include": "#string"
+						},
+						{
+							"match": "\\b(edge)\\s+([[:alpha:]_]\\w*)\\s*(:)",
+							"captures": {
+								"1": {
+									"name": "storage.type.class.jac"
+								},
+								"2": {
+									"name": "entity.name.type.class.jac"
+								},
+								"3": {
+									"name": "punctuation.separator.jac"
+								}
+							}
+						},
+						{
+							"name": "storage.modifier.declaration.jac",
+							"match": "\\b(comptime|include|type)\\b"
+						},
+						{
+							"name": "keyword.control.import.jac",
+							"match": "\\bas\\b"
+						},
+						{
+							"include": "#jac-graph-operator"
+						},
+						{
+							"begin": "(?<=[\\w*])\\s*(\\{)",
+							"end": "\\}",
+							"beginCaptures": {
+								"1": {
+									"name": "punctuation.section.block.begin.jac"
+								}
+							},
+							"endCaptures": {
+								"0": {
+									"name": "punctuation.section.block.end.jac"
+								}
+							},
+							"patterns": [
+								{
+									"include": "#comments"
+								},
+								{
+									"name": "keyword.control.import.jac",
+									"match": "\\bas\\b"
+								},
+								{
+									"name": "keyword.operator.wildcard.jac",
+									"match": "\\*"
+								},
+								{
+									"name": "punctuation.separator.jac",
+									"match": ","
+								}
+							]
+						},
+						{
+							"begin": "\\[",
+							"end": "\\]",
+							"patterns": [
+								{
+									"include": "$self"
+								}
+							]
+						},
+						{
+							"name": "keyword.operator.wildcard.jac",
+							"match": "\\*"
+						},
+						{
+							"name": "punctuation.separator.jac",
+							"match": "\\|"
+						},
+						{
+							"name": "entity.name.namespace.jac",
+							"match": "\\b[[:alpha:]_]\\w*\\b"
+						}
+					]
+				}
+			]
+		},
+		"archwire-decls": {
+			"patterns": [
+				{
+					"include": "#comments"
+				},
+				{
+					"include": "#string"
+				},
+				{
+					"match": "\\b(space)\\s+([[:alpha:]_]\\w*)\\s*(:)\\s*([[:alpha:]_]\\w*)",
+					"captures": {
+						"1": {
+							"name": "storage.type.class.jac"
+						},
+						"2": {
+							"name": "entity.name.type.class.jac"
+						},
+						"3": {
+							"name": "punctuation.separator.jac"
+						},
+						"4": {
+							"name": "support.type.jac"
+						}
+					}
+				},
+				{
+					"match": "\\b(app|package|layer)\\s+([[:alpha:]_]\\w*)",
+					"captures": {
+						"1": {
+							"name": "storage.type.class.jac"
+						},
+						"2": {
+							"name": "entity.name.type.class.jac"
+						}
+					}
+				},
+				{
+					"name": "keyword.control.flow.jac",
+					"match": "\\b(entry|run|serve|ship)\\b"
+				},
+				{
+					"match": "\\b([[:alpha:]_]\\w*)\\s+(has)\\b",
+					"captures": {
+						"1": {
+							"name": "entity.name.type.class.jac"
+						},
+						"2": {
+							"name": "storage.type.has.jac"
+						}
+					}
+				},
+				{
+					"begin": "\\{",
+					"end": "\\}",
+					"beginCaptures": {
+						"0": {
+							"name": "punctuation.section.block.begin.jac"
+						}
+					},
+					"endCaptures": {
+						"0": {
+							"name": "punctuation.section.block.end.jac"
+						}
+					},
+					"patterns": [
+						{
+							"include": "#archwire-decls"
+						}
+					]
+				},
+				{
+					"name": "keyword.operator.wildcard.jac",
+					"match": "\\*"
+				},
+				{
+					"name": "punctuation.separator.jac",
+					"match": "\\|"
+				},
+				{
+					"name": "punctuation.separator.jac",
+					"match": "[,;.]"
+				},
+				{
+					"name": "entity.name.namespace.jac",
+					"match": "\\b[[:alpha:]_]\\w*\\b"
+				}
+			]
+		},
 		"general": {
 			"patterns": [
 				{
@@ -388,6 +810,9 @@
 				},
 				{
 					"include": "#jsx"
+				},
+				{
+					"include": "#jac-operator"
 				},
 				{
 					"include": "#jac-graph-operator"
@@ -993,6 +1418,34 @@
 		"statement-keyword": {
 			"patterns": [
 				{
+					"name": "storage.modifier.declaration.jac",
+					"match": "\\b(?<!\\.)class\\b(?=\\s+(?:static\\s+|async\\s+)*(?:def|can)\\b)"
+				},
+				{
+					"match": "\\b(?<!\\.)(defer)\\b(?=\\s*\\{)",
+					"captures": {
+						"1": {
+							"name": "keyword.control.flow.jac"
+						}
+					}
+				},
+				{
+					"match": "(?<=\\breturn)\\s+(tail)\\b(?=\\s+[[:alpha:]_])",
+					"captures": {
+						"1": {
+							"name": "keyword.control.flow.jac"
+						}
+					}
+				},
+				{
+					"match": "^\\s*(in)\\b(?=\\s+[^;{]+\\{)",
+					"captures": {
+						"1": {
+							"name": "keyword.control.flow.jac"
+						}
+					}
+				},
+				{
 					"name": "storage.type.function.jac",
 					  "match": "\\b((async\\s+)?(can|impl|sem|def))\\b"
 				},
@@ -1015,7 +1468,7 @@
 				},
 				{
 					"name": "storage.modifier.declaration.jac",
-					"match": "(?x)\n  \\b(?<!\\.)(\n    priv|protect|pub|static|override|comptime|glob|cl|sv|na\n  )\\b\n"
+					"match": "(?x)\n  \\b(?<!\\.)(\n    priv|protect|prot|pub|static|override|comptime|glob|cl|sv|na\n  )\\b\n"
 				},
 				{
 					"name": "storage.type.class.jac",
@@ -1042,6 +1495,9 @@
 					"include": "#jsx"
 				},
 				{
+					"include": "#jac-operator"
+				},
+				{
 					"include": "#jac-graph-operator"
 				},
 				{
@@ -1064,6 +1520,9 @@
 				},
 				{
 					"include": "#illegal-operator"
+				},
+				{
+					"include": "#ownership-modifiers"
 				},
 				{
 					"include": "#operator"
@@ -1312,7 +1771,7 @@
 			"match": "(?x)\n     <<= | >>= | //= | \\*\\*=\n    | \\+= | -= | /= | @=\n    | \\*= | %= | ~= | \\^= | &= | \\|=\n    | =(?!=)\n"
 		},
 		"operator": {
-			"match": "(?x)\\b(?<!\\.)(?:(and | or | not | in | is) (?# 1)|( \\? | for | if | else | await | (?:yield(?:\\s+from)?)) (?# 2))(?!\\s*:)\\b| (<< | >> | & | \\| | \\^ | ~) (?# 3)| (\\*\\* | \\* | \\+ | - | % | // | / | @) (?# 4)| (!= | == | >= | <= | < | >) (?# 5)| (:=) (?# 6)",
+			"match": "(?x)\\b(?<!\\.)(?:(and | or | not | in | is) (?# 1)|( \\? | for | if | else | await | flow | wait | (?:yield(?:\\s+from)?)) (?# 2))(?!\\s*:)\\b| (<< | >> | & | \\| | \\^ | ~) (?# 3)| (\\*\\* | \\* | \\+ | - | % | // | / | @) (?# 4)| (!= | == | >= | <= | < | >) (?# 5)| (:=) (?# 6)",
 			"captures": {
 				"1": {
 					"name": "keyword.operator.logical.python"
@@ -1697,7 +2156,7 @@
 			"patterns": [
 				{
 					"name": "meta.class.jac",
-					"begin": "(?x)\\s*(enum|obj|class|node|edge|walker|test)\\s*(?=\\s*[[:alpha:]_]\\w*|:(pub|priv|protect)?\\s+[[:alpha:]_]\\w*|\\s*({|;|\\n))",
+					"begin": "(?x)\\s*(enum|obj|class|node|edge|walker|test)\\b(?!\\s+(?:static\\s+|async\\s+)*(?:def|can)\\b)\\s*(?=\\s*[[:alpha:]_]\\w*|:(pub|priv|protect|prot)?\\s+[[:alpha:]_]\\w*|\\s*({|;|\\n))",
 					"end": "({|;)",
 					"beginCaptures": {
 						"1": {
@@ -1711,7 +2170,7 @@
 					},
 					"patterns": [
 						{
-							"match": ":(pub|priv|protect)?",
+							"match": ":(pub|priv|protect|prot)?",
 							"captures": {
 								"1": { "name": "storage.modifier.declaration.jac" }
 							}
@@ -2191,6 +2650,9 @@
 			},
 			"patterns": [
 				{
+					"include": "#where-clause"
+				},
+				{
 					"include": "#ownership-modifiers"
 				},
 				{
@@ -2481,12 +2943,36 @@
 			]
 		},
 		"ownership-modifiers": {
-			"name": "storage.modifier.declaration.jac",
-			"match": "(?x)\\b(?<!\\.)(own|mut|imm|lin|abst)\\b"
+			"patterns": [
+				{
+					"name": "storage.modifier.declaration.jac",
+					"match": "(?x)\\b(?<!\\.)(own|mut|imm|lin|abst)\\b"
+				},
+				{
+					"name": "storage.modifier.declaration.jac",
+					"match": "\\b(?<!\\.)(dyn|comptime)\\b(?=\\s+[[:alpha:]_])"
+				},
+				{
+					"match": "(?:(?<=[:=(,\\[])|(?<=[:=(,\\[]\\s))(&)(?=\\s*[[:alpha:]_])",
+					"captures": {
+						"1": {
+							"name": "storage.modifier.declaration.jac"
+						}
+					}
+				},
+				{
+					"match": "(&)\\s*(?=mut\\b)",
+					"captures": {
+						"1": {
+							"name": "storage.modifier.declaration.jac"
+						}
+					}
+				}
+			]
 		},
 		"builtin-types": {
 			"name": "support.type.jac",
-			"match": "(?x)(?<!\\.) \\b(str|int|float|list|tuple|set|dict|bool|bytes|any|type|i8|u8|i16|u16|i32|u32|i64|u64|f32|f64)\\b\n"
+			"match": "(?x)(?<!\\.) \\b(str|int|float|list|tuple|set|dict|bool|bytes|any|type|i8|u8|i16|u16|i32|u32|i64|u64|i128|u128|f16|bf16|f32|f64|f8e4m3fn|f8e5m2|f4e2m1fn)\\b\n"
 		},
 		"magic-function-names": {
 			"comment": "these methods have magic interpretation by python and are generally called\nindirectly through syntactic constructs\n",
@@ -2562,7 +3048,7 @@
 		},
 		"jac-graph-operator": {
 			"name": "keyword.operator.graph.jac",
-			"match": "\\+\\+>|<\\+\\+|-->|<--|->|<-|\\+>|<\\+"
+			"match": "<\\+\\+>|<-->|\\+\\+>|<\\+\\+|-->|<--|->|<-|\\+>|<\\+"
 		},
 		"illegal-anno": {
 			"name": "invalid.illegal.annotation.jac",

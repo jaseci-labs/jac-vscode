@@ -1401,3 +1401,206 @@ describe('graph_lin.jac', () => {
         });
     });
 });
+
+// ---------------------------------------------------------------------------
+// Typed declarations, borrows, the newer operators, and archwire.jac blocks
+// ---------------------------------------------------------------------------
+function scopesOf(result: TokenizeResult, line: number, text: string, nth = 0): string[] {
+    const tokens = [...result.byLocation.values()].filter(t => t.line === line && t.text.trim() === text);
+    expect(tokens.length).toBeGreaterThan(nth);
+    return tokens[nth].scopes;
+}
+
+function readExample(...parts: string[]): string {
+    return fs.readFileSync(path.join(EXAMPLES_DIR, ...parts), 'utf-8');
+}
+
+describe('declarations_typed.jac', () => {
+    let result: TokenizeResult;
+
+    beforeAll(async () => {
+        result = await tokenizeContent(readExample('declarations_typed.jac'), GRAMMAR_PATH, WASM_PATH);
+    });
+
+    test('import type (line 3)', () => {
+        expect(scopesOf(result, 3, 'type')).toContain('keyword.control.import.jac');
+        expect(scopesOf(result, 3, 'json')).toContain('entity.name.namespace.jac');
+    });
+
+    test('type alias names and type parameters (lines 6-7)', () => {
+        expect(scopesOf(result, 6, 'type')).toContain('storage.type.alias.jac');
+        expect(scopesOf(result, 6, 'Id')).toContain('entity.name.type.alias.jac');
+        expect(scopesOf(result, 7, 'Pair')).toContain('entity.name.type.alias.jac');
+        expect(scopesOf(result, 7, 'T', 0)).toContain('entity.name.type.parameter.jac');
+        expect(scopesOf(result, 7, 'tuple')).toContain('support.type.jac');
+    });
+
+    test('prot access tag on glob and has (lines 9, 18)', () => {
+        expect(scopesOf(result, 9, 'prot')).toContain('storage.modifier.declaration.jac');
+        expect(scopesOf(result, 18, 'prot')).toContain('storage.modifier.declaration.jac');
+        expect(scopesOf(result, 18, 'label')).toContain('variable.parameter.language.jac');
+    });
+
+    test('static async def keeps the function name (line 29)', () => {
+        expect(scopesOf(result, 29, 'async')).toContain('storage.type.function.async.jac');
+        expect(scopesOf(result, 29, 'load')).toContain('entity.name.function.jac');
+    });
+
+    test('class def is a class method, not an archetype (line 33)', () => {
+        expect(scopesOf(result, 33, 'class')).toContain('storage.modifier.declaration.jac');
+        expect(scopesOf(result, 33, 'def')).toContain('storage.type.function.jac');
+        expect(scopesOf(result, 33, 'make')).toContain('entity.name.function.jac');
+    });
+
+    test('struct and union archetypes (lines 38, 42)', () => {
+        expect(scopesOf(result, 38, 'struct')).toContain('storage.type.class.jac');
+        expect(scopesOf(result, 38, 'Point')).toContain('entity.name.type.class.jac');
+        expect(scopesOf(result, 42, 'union')).toContain('storage.type.class.jac');
+        expect(scopesOf(result, 42, 'Bits')).toContain('entity.name.type.class.jac');
+    });
+
+    test('128-bit int types (line 39)', () => {
+        expect(scopesOf(result, 39, 'i128')).toContain('support.type.jac');
+        expect(scopesOf(result, 39, 'u128')).toContain('support.type.jac');
+    });
+
+    test('type parameters and their bound (line 54)', () => {
+        expect(scopesOf(result, 54, 'T')).toContain('entity.name.type.parameter.jac');
+        expect(scopesOf(result, 54, 'Shape')).not.toContain('entity.name.type.parameter.jac');
+    });
+
+    test('comptime type parameter and where clause (line 62)', () => {
+        expect(scopesOf(result, 62, 'comptime')).toContain('storage.modifier.declaration.jac');
+        expect(scopesOf(result, 62, 'N')).toContain('entity.name.type.parameter.jac');
+        expect(scopesOf(result, 62, 'where')).toContain('keyword.control.flow.jac');
+    });
+
+    test('where as a function name stays a name (line 70)', () => {
+        expect(scopesOf(result, 70, 'where')).toContain('entity.name.function.jac');
+    });
+
+    test('comptime parameter and dyn type (lines 74, 78)', () => {
+        expect(scopesOf(result, 74, 'comptime')).toContain('storage.modifier.declaration.jac');
+        expect(scopesOf(result, 78, 'dyn')).toContain('storage.modifier.declaration.jac');
+    });
+});
+
+describe('borrows_operators.jac', () => {
+    let result: TokenizeResult;
+
+    beforeAll(async () => {
+        result = await tokenizeContent(readExample('borrows_operators.jac'), GRAMMAR_PATH, WASM_PATH);
+    });
+
+    test('defer, return tail and the region block (lines 6, 19, 24)', () => {
+        expect(scopesOf(result, 6, 'defer')).toContain('keyword.control.flow.jac');
+        expect(scopesOf(result, 19, 'tail')).toContain('keyword.control.flow.jac');
+        expect(scopesOf(result, 24, 'in')).toContain('keyword.control.flow.jac');
+    });
+
+    test('& and &mut borrows (line 30)', () => {
+        expect(scopesOf(result, 30, '&', 0)).toContain('storage.modifier.declaration.jac');
+        expect(scopesOf(result, 30, '&', 1)).toContain('storage.modifier.declaration.jac');
+    });
+
+    test('wrapping and saturating operators are one token (lines 47-50)', () => {
+        expect(scopesOf(result, 47, '+%')).toContain('keyword.operator.arithmetic.jac');
+        expect(scopesOf(result, 48, '*|')).toContain('keyword.operator.arithmetic.jac');
+        expect(scopesOf(result, 49, '-%')).toContain('keyword.operator.arithmetic.jac');
+        expect(scopesOf(result, 50, '+%=')).toContain('keyword.operator.assignment.jac');
+    });
+
+    test('?? and the pipes (lines 51, 60-63)', () => {
+        expect(scopesOf(result, 51, '??')).toContain('keyword.operator.logical.jac');
+        expect(scopesOf(result, 60, '|>')).toContain('keyword.operator.pipe.jac');
+        expect(scopesOf(result, 61, '<|')).toContain('keyword.operator.pipe.jac');
+        expect(scopesOf(result, 62, ':>')).toContain('keyword.operator.pipe.jac');
+        expect(scopesOf(result, 63, '<:')).toContain('keyword.operator.pipe.jac');
+    });
+
+    test('counting for with while and with (line 69)', () => {
+        expect(scopesOf(result, 69, 'while')).toContain('keyword.control.flow.jac');
+        expect(scopesOf(result, 69, 'with')).toContain('keyword.control.flow.jac');
+        expect(scopesOf(result, 69, 'with')).not.toContain('storage.type.function.jac');
+    });
+});
+
+describe('typed_graph.jac', () => {
+    let result: TokenizeResult;
+
+    beforeAll(async () => {
+        result = await tokenizeContent(readExample('typed_graph.jac'), GRAMMAR_PATH, WASM_PATH);
+    });
+
+    test('small float types (lines 27, 31)', () => {
+        expect(scopesOf(result, 27, 'f16')).toContain('support.type.jac');
+        expect(scopesOf(result, 27, 'bf16')).toContain('support.type.jac');
+        expect(scopesOf(result, 31, 'f8e4m3fn')).toContain('support.type.jac');
+        expect(scopesOf(result, 31, 'f4e2m1fn')).toContain('support.type.jac');
+    });
+
+    test('optional chaining (line 36)', () => {
+        expect(scopesOf(result, 36, '?.')).toContain('punctuation.accessor.optional.jac');
+    });
+
+    test('<++> is one operator (line 49)', () => {
+        expect(scopesOf(result, 49, '<++>')).toContain('keyword.operator.graph.jac');
+    });
+
+    test('wait inside call arguments (line 56)', () => {
+        expect(scopesOf(result, 56, 'wait')).toContain('keyword.control.flow.jac');
+    });
+});
+
+describe('archwire_project/archwire.jac', () => {
+    let result: TokenizeResult;
+
+    beforeAll(async () => {
+        result = await tokenizeContent(readExample('archwire_project', 'archwire.jac'), GRAMMAR_PATH, WASM_PATH);
+    });
+
+    test('graph layers and layer (lines 1-2)', () => {
+        expect(scopesOf(result, 1, 'layers')).toContain('keyword.control.flow.jac');
+        expect(scopesOf(result, 2, 'layer')).toContain('storage.type.class.jac');
+        expect(scopesOf(result, 2, 'shared')).toContain('entity.name.type.class.jac');
+        expect(scopesOf(result, 2, 'model')).toContain('entity.name.namespace.jac');
+    });
+
+    test('space with its host and entry (lines 9-10)', () => {
+        expect(scopesOf(result, 9, 'space')).toContain('storage.type.class.jac');
+        expect(scopesOf(result, 9, 'api')).toContain('entity.name.type.class.jac');
+        expect(scopesOf(result, 9, 'native')).toContain('support.type.jac');
+        expect(scopesOf(result, 10, 'entry')).toContain('keyword.control.flow.jac');
+    });
+
+    test('app, run, package and ship (lines 13-14)', () => {
+        expect(scopesOf(result, 13, 'app')).toContain('storage.type.class.jac');
+        expect(scopesOf(result, 13, 'run')).toContain('keyword.control.flow.jac');
+        expect(scopesOf(result, 14, 'package')).toContain('storage.type.class.jac');
+        expect(scopesOf(result, 14, 'ship')).toContain('keyword.control.flow.jac');
+    });
+
+    test('a named graph spaces block (line 17)', () => {
+        expect(scopesOf(result, 17, 'spaces')).toContain('keyword.control.flow.jac');
+        expect(scopesOf(result, 17, 'split')).toContain('entity.name.type.class.jac');
+    });
+
+    test('a space granted module members inside an app', async () => {
+        const grant = await tokenizeContent(
+            'graph spaces {\n    app cli { store has todos.list_items, todos.add; }\n}\n',
+            GRAMMAR_PATH,
+            WASM_PATH
+        );
+        expect(scopesOf(grant, 2, 'store')).toContain('entity.name.type.class.jac');
+        expect(scopesOf(grant, 2, 'has')).toContain('storage.type.has.jac');
+        expect(scopesOf(grant, 2, 'list_items')).toContain('entity.name.namespace.jac');
+    });
+
+    test('graph import edge rules and wires (lines 22-26)', () => {
+        expect(scopesOf(result, 22, 'edge')).toContain('storage.type.class.jac');
+        expect(scopesOf(result, 22, 'Shared')).toContain('entity.name.type.class.jac');
+        expect(scopesOf(result, 23, 'edge')).toContain('storage.type.class.jac');
+        expect(scopesOf(result, 25, '++>')).toContain('keyword.operator.graph.jac');
+        expect(scopesOf(result, 26, 'show')).toContain('entity.name.namespace.jac');
+    });
+});
