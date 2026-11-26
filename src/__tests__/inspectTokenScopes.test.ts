@@ -1348,7 +1348,7 @@ describe('new_keywords.jac', () => {
 
 // ---------------------------------------------------------------------------
 // graph_lin.jac: graph construction expressions, the lin ownership marker,
-// and `to` as a plain identifier now that it is no longer a keyword
+// and `to`/`let`/`py` as plain identifiers now that they are no longer keywords
 // ---------------------------------------------------------------------------
 describe('graph_lin.jac', () => {
     let result: TokenizeResult;
@@ -1373,12 +1373,31 @@ describe('graph_lin.jac', () => {
         });
     });
 
-    describe('removed keywords (line 15)', () => {
-        test('to is a plain identifier', () => {
+    describe('removed keywords', () => {
+        test('to is a plain identifier (line 15)', () => {
             const token = getTokenByLocation(result, 15, 1, 8);
             expect(token).toBeDefined();
             expect(token!.text).toBe('    to ');
             expect(token!.scopes).not.toContain('keyword.control.flow.jac');
+        });
+
+        test('let at the end of a line is a plain identifier (lines 17-18)', () => {
+            const tokens = [...result.byLocation.entries()]
+                .filter(([loc]) => loc.startsWith('17:') || loc.startsWith('18:'))
+                .map(([, token]) => token);
+            expect(tokens.some(t => t.text.includes('let'))).toBe(true);
+            for (const token of tokens) {
+                expect(token.scopes).not.toContain('storage.type.variable.jac');
+                expect(token.scopes).not.toContain('meta.property.jac');
+            }
+        });
+    });
+
+    describe('import alias (line 22)', () => {
+        test('py is an ordinary namespace name', () => {
+            expectToken(result, 22, 14, 16, 'py', ['source.jac', 'entity.name.namespace.jac']);
+            const token = getTokenByLocation(result, 22, 14, 16);
+            expect(token!.scopes).not.toContain('variable.language.special.self.jac');
         });
     });
 });

@@ -14,4 +14,9 @@ with entry {
     print(close(h));
     to = f.root;
     print(to.name);
+    let
+        = 3;
+    print(let);
 }
+
+import os as py;
