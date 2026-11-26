@@ -495,8 +495,15 @@
 			]
 		},
 		"type-alias": {
-			"match": "(?x)^\\s*(type)(?:(:)(pub|priv|protect|prot))?\\s+([[:alpha:]_]\\w*)(?=\\s*(?:\\[|=|:=))",
-			"captures": {
+			"name": "meta.type-alias.jac",
+			"begin": "(?x)^\\s*(type)(?:(:)(pub|priv|protect|prot))?\\s+([[:alpha:]_]\\w*)(?=\\s*(?:\\[|=|:=))",
+			"end": "(?=\\s*:?=)",
+			"patterns": [
+				{
+					"include": "#type-parameters"
+				}
+			],
+			"beginCaptures": {
 				"1": {
 					"name": "storage.type.alias.jac"
 				},
@@ -737,8 +744,15 @@
 					"match": "\\b(entry|run|serve|ship)\\b"
 				},
 				{
-					"name": "storage.type.has.jac",
-					"match": "\\bhas\\b"
+					"match": "\\b([[:alpha:]_]\\w*)\\s+(has)\\b",
+					"captures": {
+						"1": {
+							"name": "entity.name.type.class.jac"
+						},
+						"2": {
+							"name": "storage.type.has.jac"
+						}
+					}
 				},
 				{
 					"begin": "\\{",

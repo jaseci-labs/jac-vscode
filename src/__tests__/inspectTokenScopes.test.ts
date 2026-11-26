@@ -1427,9 +1427,12 @@ describe('declarations_typed.jac', () => {
         expect(scopesOf(result, 3, 'json')).toContain('entity.name.namespace.jac');
     });
 
-    test('type alias name (line 6)', () => {
+    test('type alias names and type parameters (lines 6-7)', () => {
         expect(scopesOf(result, 6, 'type')).toContain('storage.type.alias.jac');
         expect(scopesOf(result, 6, 'Id')).toContain('entity.name.type.alias.jac');
+        expect(scopesOf(result, 7, 'Pair')).toContain('entity.name.type.alias.jac');
+        expect(scopesOf(result, 7, 'T', 0)).toContain('entity.name.type.parameter.jac');
+        expect(scopesOf(result, 7, 'tuple')).toContain('support.type.jac');
     });
 
     test('prot access tag on glob and has (lines 9, 18)', () => {
@@ -1580,6 +1583,17 @@ describe('archwire_project/archwire.jac', () => {
     test('a named graph spaces block (line 17)', () => {
         expect(scopesOf(result, 17, 'spaces')).toContain('keyword.control.flow.jac');
         expect(scopesOf(result, 17, 'split')).toContain('entity.name.type.class.jac');
+    });
+
+    test('a space granted module members inside an app', async () => {
+        const grant = await tokenizeContent(
+            'graph spaces {\n    app cli { store has todos.list_items, todos.add; }\n}\n',
+            GRAMMAR_PATH,
+            WASM_PATH
+        );
+        expect(scopesOf(grant, 2, 'store')).toContain('entity.name.type.class.jac');
+        expect(scopesOf(grant, 2, 'has')).toContain('storage.type.has.jac');
+        expect(scopesOf(grant, 2, 'list_items')).toContain('entity.name.namespace.jac');
     });
 
     test('graph import edge rules and wires (lines 22-26)', () => {
